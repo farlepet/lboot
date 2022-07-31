@@ -20,7 +20,7 @@ $(STAGE1): $(STAGE1).o
 
 $(STAGE1).o: stage1.s
 	@echo -e "\033[32m    \033[1mAS\033[21m    \033[34m$<\033[0m"
-	$(Q) $(AS) $(ASFLAGS) -c -o $@ $<
+	$(Q) $(CC) $(ASFLAGS) -c -o $@ $<
 
 $(FLOPPY): $(STAGE1)
 	$(Q) rm -f $@
