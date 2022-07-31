@@ -11,13 +11,16 @@ endif
 
 .DEFAULT_GOAL=$(FLOPPY)
 
+MKDOSFS_FLAGS = -n "LBOOT" -F 12 
+
 $(STAGE1): stage1/stage1.s
 	@cd stage1; $(MAKE)
 
 $(FLOPPY): $(STAGE1)
 	$(Q) rm -f $@
-	$(Q) mkdosfs -C $@ 1440
-	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc
+	$(Q) mkdosfs $(MKDOSFS_FLAGS) -C $@ 1440
+	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes count=11
+	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes skip=30 seek=30
 
 emu: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot
@@ -28,4 +31,4 @@ emu-dbg: $(FLOPPY)
 clean:
 	$(Q) rm -f $(STAGE1) $(FLOPPY)
 
-.PHONY: clean emu
+.PHONY: clean emu emu-dbg
