@@ -31,7 +31,7 @@ fat.hidden_sectors:      .skip 2 /* 0x1c */
 /* Bootloader-specific header data. Data here will eventually be populated by the build tool. */
 bootldr.stage2_addr:         .word 0x7e00 /* Address to which to load stage 2 loader */
 bootldr.stage2_sector_start: .word 0x0000 /* First sector of the stage 2 loader */
-bootldr.stage2_sector_count: .word 0x0001 /* Number of sectors occupied by the stage 2 loader */
+bootldr.stage2_sector_count: .word 0x0008 /* Number of sectors occupied by the stage 2 loader */
 
 
 .global start
@@ -80,10 +80,21 @@ read_stage2:
      * case, either due to bad blocks, or due to fragmentation. */
     movw (bootldr.stage2_addr),         %bx
     movw (bootldr.stage2_sector_start), %ax
+    movw (bootldr.stage2_sector_count), %cx
 
+    movw $sector_read_success_message, %si
+
+  .do_read:
     call read_sector
+    call msg_print
 
-    /* @todo actually read and execute stage2 */
+    addw $512, %bx
+    incw %ax
+    decw %cx
+    jnz  .do_read
+
+  .read_done:
+    /* @todo execute stage2 */
     jmp .
 
 
@@ -95,7 +106,12 @@ read_stage2:
  *   %bx: Destination
  */
 read_sector:
+    pusha
 .if IS_FLOPPY
+    /* Head  = Sector / TotalSectors
+     * Track = (Sector % TotalSectors) / SectorsPerTrack
+     * Track = (Sector % TotalSectors) % SectorsPerTrack
+     */
   .block_to_chs:
     /* @note This is likely not a very efficient method of performing this calculation */
     pushw %bx                     /* Save destination address */
@@ -107,7 +123,8 @@ read_sector:
     movw  (fat.sectors_per_track), %bx
     divl  %ebx                    /* EAX = Track number; EDX = Sector offset within track */
     movb  %al, %ch                /* CH  = Track number */
-    xchgb %cl, %dh                /* CL  = Sector number; DH = Head number */
+    movb  %cl, %dh                /* DH = Head number */
+    movb  %dl, %cl                /* CL  = Sector number */
     incb  %cl                     /* Adjust CL to be 1-indexed */
     popw  %bx                     /* Restore drive number */
     movb  %bl, %dl                /* DL  = Drive number */
@@ -132,7 +149,7 @@ read_sector:
     mov $0x0201, %ax
     int $0x13
 
-    jc .attempt_read /* Retry on error */
+    jc .attempt_read /* Retry on error @todo reset controller */
 .else
     pushl $0   /* LBA */
     pushl %eax /* ^   */
@@ -144,7 +161,7 @@ read_sector:
     movb $3, %cl /* Setup attempts counter */
 
     /* @note This is currently not functional */
-.read_retry:
+  .read_retry:
     dec %cl        /* Only attempt 3 times */
     jo  disk_error
 
@@ -156,6 +173,7 @@ read_sector:
 
     lea 16(%si), %sp
 .endif
+    popa
     ret
 
 
@@ -173,6 +191,7 @@ disk_error:
  *   %si: Pointer to string to print.
  */
 msg_print:
+    pusha
     movb $0x0E, %ah /* Write character */
     xorw %bx,   %bx /* Page, no color for text mode */
 .loop:
@@ -182,14 +201,17 @@ msg_print:
     int  $0x10      /* Print character */
     jmp  .loop
 .end:
+    popa
     ret
 
 boot_drive: .skip 1 /* Drive the BIOS tells us we booted from */
 
 boot_message:
-    .asciz "Stage1. "
+    .asciz "Stage1.\r\n"
 disk_err_message:
     .asciz "Disk read error."
+sector_read_success_message:
+    .asciz "."
 
 /* Boot marker */
 .skip (510 - (. - boot_sector_start))
