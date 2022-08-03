@@ -2,7 +2,7 @@
 
 /* Source for boot sector. Must fit within 512 bytes. */
 
-stack_top = 0x1000 /* Top of temporary stack */
+stack_top = 0x1000     /* Top of temporary stack */
 
 IS_FLOPPY = 1
 
@@ -26,12 +26,8 @@ fat.sectors_per_track:   .skip 2 /* 0x18 */
 fat.head_count:          .skip 2 /* 0x1a */
 fat.hidden_sectors:      .skip 2 /* 0x1c */
 
-/* @note The above only accounts for FAT12. FAT16/32 take up more space here. */
-
-/* Bootloader-specific header data. Data here will eventually be populated by the build tool. */
-bootldr.stage2_addr:         .word 0x7e00 /* Address to which to load stage 2 loader */
-bootldr.stage2_sector_start: .word 0x0000 /* First sector of the stage 2 loader */
-bootldr.stage2_sector_count: .word 0x0008 /* Number of sectors occupied by the stage 2 loader */
+/* @note The above only accounts for minimal FAT12. FAT16/32 take up more space here. */
+.skip (90 - (. - boot_sector_start))
 
 
 .global start
@@ -57,7 +53,7 @@ start:
 .if !IS_FLOPPY
     cmp  $0, %dl
     jne  .store_dl
-    movb $0x80, %dl
+    movb $0x80, %dl /* BIOS may have passed us a bogus drive */
 .endif
   .store_dl:
     movb %dl, boot_drive
@@ -75,108 +71,16 @@ start:
     movb boot_drive, %dl /* Boot drive */
     int $0x13
 
-read_stage2:
-    /* @todo This assumes the sectors are contiguous. This might not always be the
-     * case, either due to bad blocks, or due to fragmentation. */
-    movw (bootldr.stage2_addr),         %bx
-    movw (bootldr.stage2_sector_start), %ax
-    movw (bootldr.stage2_sector_count), %cx
+    /* Read stage 2 loader into memory */
+    call read_sector_map
 
-    movw $sector_read_success_message, %si
-
-  .do_read:
-    call read_sector
-    call msg_print
-
-    addw $512, %bx
-    incw %ax
-    decw %cx
-    jnz  .do_read
-
-  .read_done:
     /* @todo execute stage2 */
     jmp .
 
 
 
-/* Read single sector
- *
- * Parameters:
- *   %ax: Block address
- *   %bx: Destination
- */
-read_sector:
-    pusha
-.if IS_FLOPPY
-    /* Head  = Sector / TotalSectors
-     * Track = (Sector % TotalSectors) / SectorsPerTrack
-     * Track = (Sector % TotalSectors) % SectorsPerTrack
-     */
-  .block_to_chs:
-    /* @note This is likely not a very efficient method of performing this calculation */
-    pushw %bx                     /* Save destination address */
-    pushw %dx                     /* Save drive number */
-    movw  (fat.total_sectors), %bx
-    divl  %ebx                    /* EAX = Head number; EDX = Sector offset within head */
-    movb  %al, %cl                /* CL  = Head number (temporary) */
-    xchgw %dx, %ax                /* AX  = Sector within head; DX will be trashed */
-    movw  (fat.sectors_per_track), %bx
-    divl  %ebx                    /* EAX = Track number; EDX = Sector offset within track */
-    movb  %al, %ch                /* CH  = Track number */
-    movb  %cl, %dh                /* DH = Head number */
-    movb  %dl, %cl                /* CL  = Sector number */
-    incb  %cl                     /* Adjust CL to be 1-indexed */
-    popw  %bx                     /* Restore drive number */
-    movb  %bl, %dl                /* DL  = Drive number */
-    popw  %bx                     /* Restore destination address */
-
-    movw  $03, %si                /* Three attempts max */
-
-  .attempt_read:
-    dec %si
-    jo  disk_error /* No attempts remaining */
-
-    /* INT 13h, AH=02h 
-     *
-     * Parameters (for floppy):
-     *   AL    = Sector count
-     *   CH    = Low 8 bits of cylinder/track number
-     *   CL    = Sector number
-     *   DH    = Head number
-     *   DL    = Drive number
-     *   ES:BX = Data buffer
-     */
-    mov $0x0201, %ax
-    int $0x13
-
-    jc .attempt_read /* Retry on error @todo reset controller */
-.else
-    pushl $0   /* LBA */
-    pushl %eax /* ^   */
-    pushl %ebx /* Buffer */
-    pushw $1   /* Blocks to read */
-    pushw $16  /* Packet size */
-    movw  %sp, %si
-
-    movb $3, %cl /* Setup attempts counter */
-
-    /* @note This is currently not functional */
-  .read_retry:
-    dec %cl        /* Only attempt 3 times */
-    jo  disk_error
-
-    movb $0x42,      %ah /* Extended read */
-    movb boot_drive, %dl /* Boot drive */
-    int  $0x13
-
-    jc  .read_retry /* Carry flag is set on error */
-
-    lea 16(%si), %sp
-.endif
-    popa
-    ret
-
-
+.include "inc/read_sector.inc"
+.include "inc/read_sector_map.inc"
 
 
 disk_error:
@@ -213,6 +117,12 @@ disk_err_message:
 sector_read_success_message:
     .asciz "."
 
-/* Boot marker */
-.skip (510 - (. - boot_sector_start))
+/* Place the following at the end of the boot sector */
+.skip (506 - (. - boot_sector_start))
+
+/* Bootloader-specific header data. Data here will eventually be populated by the build tool. */
+bootldr.stage2_map_sector:   .word 0x0000 /* Sector containing stage 2 sector map, 0 indexed */
+bootldr.stage2_addr:         .word 0x7e00 /* Address to which to load stage 2 loader */
+
+/* Boot sector magic number */
 .word 0xAA55

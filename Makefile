@@ -18,7 +18,7 @@ $(FLOPPY): $(STAGE1)
 	$(Q) rm -f $@
 	$(Q) mkdosfs $(MKDOSFS_FLAGS) -C $@ 1440
 	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes count=11
-	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes skip=30 seek=30
+	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes skip=90 seek=90
 
 $(BUILDDIR):
 	$(Q) mkdir -p $@
