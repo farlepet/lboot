@@ -1,6 +1,5 @@
 BUILDDIR = build
 
-STAGE1 = stage1/stage1.bin
 FLOPPY = boot.img
 
 ifeq ($(VERBOSE), 1)
@@ -13,8 +12,7 @@ endif
 
 MKDOSFS_FLAGS = -n "LBOOT" -F 12 
 
-$(STAGE1): stage1/stage1.s
-	@cd stage1; $(MAKE)
+include stage1.mk
 
 $(FLOPPY): $(STAGE1)
 	$(Q) rm -f $@
@@ -22,13 +20,16 @@ $(FLOPPY): $(STAGE1)
 	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes count=11
 	$(Q) dd if=$(STAGE1) of=$(FLOPPY) conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes skip=30 seek=30
 
+$(BUILDDIR):
+	$(Q) mkdir -p $@
+
 emu: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot
 
 emu-dbg: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot -S -s
 
-clean:
+clean: stage1_clean
 	$(Q) rm -f $(STAGE1) $(FLOPPY)
 
 .PHONY: clean emu emu-dbg
