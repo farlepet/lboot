@@ -118,10 +118,10 @@ static off_t _get_next_cluster(fat_handle_t *hand, off_t cluster) {
 
     off_t next_cluster = 0;
     if((fat_entry >= 0x002) && (fat_entry < 0xff0)) {
-        next_cluster = fat_entry * hand->cluster_size;
+        next_cluster = hand->data_offset + (fat_entry * hand->cluster_size);
     }
 
-    FAT_DEBUG("_get_next_cluster: %04lx -> %04lx (%03x)\n", cluster, next_cluster, fat_entry);
+    FAT_DEBUG("_get_next_cluster: %08lx -> %08lx (%03x)\n", cluster, next_cluster, fat_entry);
 
     return next_cluster;
 }
@@ -134,7 +134,7 @@ static off_t _get_next_cluster(fat_handle_t *hand, off_t cluster) {
  * @param dirent Dirent to source data from
  */
 static void _populate_file_handle(fat_handle_t *hand, fat_file_handle_t *file, const fat_dirent_t *dirent) {
-    file->first_cluster = dirent->start_cluster * hand->cluster_size;
+    file->first_cluster = hand->data_offset + (dirent->start_cluster * hand->cluster_size);
     file->size          = dirent->filesize;
 }
 
@@ -205,4 +205,22 @@ file_not_found:
     free(dents);
 
     return -1;
+}
+
+int fat_get_file_clusters(fat_handle_t *hand, const fat_file_handle_t *file, uint32_t *clusters) {
+    size_t pos = 0;
+
+    off_t clust = file->first_cluster;
+
+    while(pos < file->size) {
+        if(clust == 0) {
+            FAT_ERROR("fat_get_file_clusters: Unexpected end of cluster chain\n");
+            return -1;
+        }
+        *(clusters++) = (uint32_t)clust;
+        pos          += hand->cluster_size;
+        clust         = _get_next_cluster(hand, clust);
+    }
+
+    return 0;
 }

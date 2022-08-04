@@ -121,4 +121,14 @@ void fat_close(fat_handle_t *hand);
  */
 int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_handle_t *fhand, const char *filename);
 
+/**
+ * @brief Get list of cluster addresses occupied by file
+ *
+ * @param hand FAT handle
+ * @param file File handle
+ * @param clusters Where to store list of clusters, must be of appropriate size
+ * @return int 0 on success, else non-zero
+ */
+int fat_get_file_clusters(fat_handle_t *hand, const fat_file_handle_t *file, uint32_t *clusters);
+
 #endif
