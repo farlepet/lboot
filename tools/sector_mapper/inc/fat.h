@@ -4,12 +4,15 @@
 #include <stdint.h>
 
 #pragma pack(1)
+/**
+ * @brief FAT bootsector layout
+ */
 typedef struct {
     uint8_t  jump[3]; /**< Jump to actual code */
     char     name[8]; /**< OEM name, or name of formatting utility */
     uint16_t bytes_per_sector;    /**< Bytes per sector */
     uint8_t  sectors_per_cluster; /**< Sectors per cluster */
-    uint16_t reserved_clusters;   /**< Number of reserved clusters */
+    uint16_t reserved_sectors;    /**< Number of reserved sectors */
     uint8_t  fat_copies;          /**< Number of FAT copies */
     uint16_t root_dir_entries;    /**< Number of root directory entries */
     uint16_t total_sectors;       /**< Total sectors in the filesystem, overridden by `total_sectors_big` */
@@ -56,11 +59,34 @@ typedef struct {
 
     uint16_t signature;         /**< Boot sector signatore: 0x55, 0xAA */
 } fat_bootsector_t;
+
+/**
+ * @brief FAT directory entry
+ */
+typedef struct {
+    char     filename[11];   /**< Short file name */
+    uint8_t  attr;          /**< Attributes */
+    uint8_t  _reserved[10]; /**< Reserved: Used for VFAT, not yet supported */
+    uint16_t time;          /**< Modification time, in FAT time format */
+    uint16_t date;          /**< Modification date, in FAT date format */
+    uint16_t start_cluster; /**< First cluster of file, 0 if file is empty */
+    uint32_t filesize;      /**< Size of file in bytes */
+} fat_dirent_t;
 #pragma pack()
 
 typedef struct {
-    int fd;                       /**< File handle of disk image */
-    fat_bootsector_t *bootsector; /**< Pointer to bootsector loaded into memory */
+    size_t      size;          /**< Filesize, in bytes */
+    off_t       first_cluster; /**< Offset into filesystem to first data cluster, in bytes */
+} fat_file_handle_t;
+
+typedef struct {
+    int               fd;           /**< File handle of disk image */
+    size_t            cluster_size; /**< Size of cluster, in bytes */
+    off_t             fat_offset;   /**< Offset into filesystem of first FAT */
+    size_t            fat_size;     /**< Size of FAT, in bytes */
+    off_t             data_offset;  /**< Offset into filesystem of first data cluster */
+    fat_bootsector_t *bootsector;   /**< Pointer to bootsector loaded into memory */
+    fat_file_handle_t root_dir;     /**< Root directory file handle */
 } fat_handle_t;
 
 /**
@@ -81,5 +107,18 @@ int fat_open(fat_handle_t *hand, const char *path, int oflags);
  * @param hand FAT handle
  */
 void fat_close(fat_handle_t *hand);
+
+/**
+ * @brief Find file within a directory
+ *
+ * @note Does not recursively search
+ *
+ * @param hand FAT handle
+ * @param dir Directory in which to search
+ * @param fhand Handle in which to store file information
+ * @param filename Filename to search for
+ * @return int 0 if file is found, else non-zero
+ */
+int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_handle_t *fhand, const char *filename);
 
 #endif

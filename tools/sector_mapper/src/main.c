@@ -47,6 +47,12 @@ int _round1(int argc, char **argv) {
         return -1;
     }
 
+    fat_file_handle_t stage2;
+    if(fat_find_file(&fat, &fat.root_dir, &stage2, argv[3])) {
+        fprintf(stderr, "Could not find stage 2 file `%s`\n", argv[3]);
+        return -1;
+    }
+
     fat_close(&fat);
 
     return 0;
