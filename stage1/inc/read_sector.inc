@@ -7,29 +7,31 @@
 read_sector:
     pusha
 .if IS_FLOPPY
-    /* Head  = Sector / TotalSectors
-     * Track = (Sector % TotalSectors) / SectorsPerTrack
-     * Track = (Sector % TotalSectors) % SectorsPerTrack
-     */
+    /* tmp      =  LBA / SectorsPerTrack
+     * Sector   = (LBA % SectorsPerTrack) + 1
+     * Cylinder =  tmp / NumberOfHeads
+     * Head     =  tmp % NumberOfHeads */
   .block_to_chs:
-    /* @note This is likely not a very efficient method of performing this calculation */
     pushw %bx                     /* Save destination address */
     pushw %dx                     /* Save drive number */
-    movw  (fat.total_sectors), %bx
-    divl  %ebx                    /* EAX = Head number; EDX = Sector offset within head */
-    movb  %al, %cl                /* CL  = Head number (temporary) */
-    xchgw %dx, %ax                /* AX  = Sector within head; DX will be trashed */
-    movw  (fat.sectors_per_track), %bx
-    divl  %ebx                    /* EAX = Track number; EDX = Sector offset within track */
-    movb  %al, %ch                /* CH  = Track number */
-    movb  %cl, %dh                /* DH = Head number */
-    movb  %dl, %cl                /* CL  = Sector number */
-    incb  %cl                     /* Adjust CL to be 1-indexed */
-    popw  %bx                     /* Restore drive number */
-    movb  %bl, %dl                /* DL  = Drive number */
-    popw  %bx                     /* Restore destination address */
 
-    movw  $03, %si                /* Three attempts max */
+    xorw %dx, %dx
+    movw (fat.sectors_per_track), %bx
+    divw %bx                      /* AX = tmp; DX = Sector - 1 */
+    movb %dl, %cl                 /* CL = Sector - 1 */
+    incb %cl                      /* CL = Sector */
+
+    xorw %dx, %dx
+    movw (fat.head_count), %bx
+    divw %bx                      /* AX = Cylinder; DX = Head */
+    movb %al, %ch                 /* CH = Cylinder */
+    movb %dl, %dh                 /* DH = Head */
+
+    popw %bx
+    movb %bl, %dl                 /* DL = Drive Number */
+    popw %bx                      /* BX = Destination Address */
+
+    movw  $3, %si                 /* Three attempts max */
 
   .attempt_read:
     dec %si

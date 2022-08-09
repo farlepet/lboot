@@ -66,6 +66,10 @@ start:
     movw $boot_message, %si
     call msg_print
 
+    /* Save address to jump to before it gets modified. */
+    movw (bootldr.stage2_addr), %bx
+    movw %bx, (stage2_addr_bkp)
+
   .reset_drive:
     movb $0x00,      %ah /* Reset drive */
     movb boot_drive, %dl /* Boot drive */
@@ -74,8 +78,9 @@ start:
     /* Read stage 2 loader into memory */
     call read_sector_map
 
-    /* @todo execute stage2 */
-    jmp .
+    /* Jmp into stage2 */
+    movw (stage2_addr_bkp), %ax
+    jmp  *%ax
 
 
 
@@ -109,6 +114,8 @@ msg_print:
     ret
 
 boot_drive: .skip 1 /* Drive the BIOS tells us we booted from */
+
+stage2_addr_bkp:     .skip 2
 
 boot_message:
     .asciz "Stage1.\r\n"

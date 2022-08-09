@@ -15,8 +15,10 @@ read_sector_map:
     movw $map_temp_addr, %si
   .handle_map_entry:
     movw 0(%si), %ax    /* Sector to read */
+    test %ax, %ax
     jz   .map_chain_end /* Sector of 0 signals end-of-map */
     movw 2(%si), %cx    /* Sector count */
+    /* @todo Actually use value of %cx for multiple reads */
     call read_sector
 
     addw $0x04, %si     /* Move to next entry */
@@ -27,6 +29,7 @@ read_sector_map:
 
   .map_end:
     movw (%si), %si                       /* Read pointer to next sector map */
+    test %si, %si
     jz   .map_chain_end                   /* Sector of 0 signals end-of-map */
 
     movw %si, (bootldr.stage2_map_sector) /* Update next map sector */
