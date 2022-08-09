@@ -6,8 +6,6 @@ map_next_addr = map_temp_addr + 0x1fc /* Location of pointer to next sector - if
 read_sector_map:
     movw (bootldr.stage2_map_sector), %ax /* First map sector */
     movw $map_temp_addr,              %bx /* Load to temporary address */
-    movw $1,                          %cx /* Read one sector */
-
     call read_sector
 
     pusha
@@ -18,8 +16,13 @@ read_sector_map:
     test %ax, %ax
     jz   .map_chain_end /* Sector of 0 signals end-of-map */
     movw 2(%si), %cx    /* Sector count */
-    /* @todo Actually use value of %cx for multiple reads */
+
+  .do_map_read:
     call read_sector
+    addw $512, %bx      /* Next destination address */
+    incw %ax            /* Next sector */
+    decw %cx
+    jnz .do_map_read
 
     addw $0x04, %si     /* Move to next entry */
     cmp  $map_next_addr, %dx
