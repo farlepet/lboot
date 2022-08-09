@@ -75,5 +75,7 @@ read_sector:
 
     lea 16(%si), %sp
 .endif
+    movw $sector_read_success_message, %si
+    call msg_print
     popa
     ret

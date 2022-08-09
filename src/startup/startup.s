@@ -31,4 +31,4 @@ msg_print:
     popa
     ret
 boot_message:
-    .asciz "Stage2.\r\n"
+    .asciz "\r\nStage2.\r\n"
