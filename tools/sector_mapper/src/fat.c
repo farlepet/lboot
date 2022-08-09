@@ -113,12 +113,12 @@ static off_t _get_next_cluster(fat_handle_t *hand, off_t cluster) {
         }
     }
 
-    uint32_t cluster_num = (cluster - hand->data_offset) / hand->cluster_size;
+    uint32_t cluster_num = ((cluster - hand->data_offset) / hand->cluster_size) + 2;
     uint32_t fat_entry   = _get_fat_entry(hand, cluster_num);
 
     off_t next_cluster = 0;
     if((fat_entry >= 0x002) && (fat_entry < 0xff0)) {
-        next_cluster = hand->data_offset + (fat_entry * hand->cluster_size);
+        next_cluster = hand->data_offset + ((fat_entry - 2) * hand->cluster_size);
     }
 
     FAT_DEBUG("_get_next_cluster: %08lx -> %08lx (%03x)\n", cluster, next_cluster, fat_entry);
@@ -134,7 +134,7 @@ static off_t _get_next_cluster(fat_handle_t *hand, off_t cluster) {
  * @param dirent Dirent to source data from
  */
 static void _populate_file_handle(fat_handle_t *hand, fat_file_handle_t *file, const fat_dirent_t *dirent) {
-    file->first_cluster = hand->data_offset + (dirent->start_cluster * hand->cluster_size);
+    file->first_cluster = hand->data_offset + ((dirent->start_cluster - 2) * hand->cluster_size);
     file->size          = dirent->filesize;
 }
 
@@ -146,13 +146,30 @@ static void _populate_file_handle(fat_handle_t *hand, fat_file_handle_t *file, c
  * @return int 0 on match, else non-zero
  */
 static int _fat_strcmp(const char *fat_name, const char *filename) {
-    size_t len = 11;
-    while(len && (fat_name[len-1] == ' ')) { len--; }
+    unsigned fidx = 0;
 
-    if(strlen(filename) != len) {
-        return -1;
+    while(*filename) {
+        if(*filename == '.') {
+            while(fat_name[fidx] == ' ') {
+                fidx++;
+            }
+            filename++;
+            continue;
+        }
+        if(fat_name[fidx] != *filename) {
+            return -1;
+        }
+        filename++;
+        fidx++;
     }
-    return strncmp(fat_name, filename, len);
+    while(fidx <= 11) {
+        if(fat_name[fidx] != ' ') {
+            /* Trailing character */
+            return -1;
+        }
+        fidx++;
+    }
+    return 0;
 }
 
 int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_handle_t *fhand, const char *filename) {

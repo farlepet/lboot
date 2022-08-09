@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -50,6 +51,11 @@ int _round1(int argc, char **argv) {
     fat_handle_t fat;
     if(fat_open(&fat, argv[2], O_RDONLY)) {
         fprintf(stderr, "Could not load FAT file `%s`\n", argv[2]);
+        return -1;
+    }
+
+    if(fat.cluster_size != 512) {
+        fprintf(stderr, "Cluster sizes != 512 not currently supported, saw %lu\n", fat.cluster_size);
         return -1;
     }
 
@@ -162,6 +168,52 @@ int _round2(int argc, char **argv) {
         return -1;
     }
 
+    if(fat.cluster_size != 512) {
+        fprintf(stderr, "Cluster sizes != 512 not currently supported, saw %lu\n", fat.cluster_size);
+        return -1;
+    }
+
+    fat_file_handle_t map_file;
+    if(fat_find_file(&fat, &fat.root_dir, &map_file, argv[3])) {
+        fprintf(stderr, "Could not find map file `%s`\n", argv[3]);
+        fat_close(&fat);
+        return -1;
+    }
+
+    unsigned n_clusters = map_file.size / fat.cluster_size;
+    if(map_file.size % fat.cluster_size) {
+        n_clusters++;
+    }
+
+    uint32_t *clusters = malloc(n_clusters * sizeof(uint32_t));
+    if(clusters == NULL) {
+        fprintf(stderr, "Could not allocate space for %u cluster addresses\n", n_clusters);
+        fat_close(&fat);
+        return -1;
+    }
+
+    if(fat_get_file_clusters(&fat, &map_file, clusters)) {
+        fprintf(stderr, "Could not obtain cluster addresses\n");
+        free(clusters);
+        fat_close(&fat);
+        return -1;
+    }
+
+    off_t pre_addr = offsetof(fat_bootsector_t, stage2_map_sector);
+    for(unsigned i = 0; i < n_clusters; i++) {
+        uint16_t clust = (clusters[i] / fat.cluster_size) * fat.bootsector->sectors_per_cluster;
+        fprintf(stderr, "%08lx <- %04hx (%04x)\n", pre_addr, clust, clusters[i]);
+        if(pwrite(fat.fd, &clust, 2, pre_addr) != 2) {
+            fprintf(stderr, "Error while writing to image: %s\n", strerror(errno));
+            free(clusters);
+            fat_close(&fat);
+            return -1;
+        }
+        pre_addr = clusters[i] + offsetof(sector_map_chunk_t, next_chunk);
+    }
+    /* Last sector pointer should already be zero from round 1. */
+
+    free(clusters);
     fat_close(&fat);
 
     return 0;
