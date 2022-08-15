@@ -17,6 +17,7 @@ typedef int32_t  intptr_t;   /**< Signed pointer */
 typedef uint32_t size_t;  /**< Size/length */
 typedef int32_t  ssize_t; /**< Size/length/error */
 
+typedef int32_t off_t; /**< Offset. @note this will need to be increased to 64-bit if supporting hard disks. */
 
 #define CHAR_MAX   127
 #define UCHAR_MAX  255
