@@ -45,7 +45,7 @@ emu: $(FLOPPY)
 emu-dbg: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot -S -s
 
-clean: stage1_clean
+clean: stage1_clean stage2_clean
 	$(Q) rm -f $(STAGE1) $(FLOPPY)
 
 .PHONY: clean emu emu-dbg

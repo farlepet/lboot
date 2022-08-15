@@ -7,7 +7,7 @@ SECTIONS {
 
     .text : {
         __lboot_text_begin = .;
-        *(.entrypoint)
+        *(.entrypoint) /* Entrypoint needs to be first, since we jump to the beginning of the binary */
         *(.text.*)
         __lboot_text_end = .;
     }

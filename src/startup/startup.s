@@ -6,11 +6,11 @@
 
 .extern cstart
 .global start
+.type   start, @function
 start:
     /* Print boot message */
     movw $boot_message, %si
     call msg_print
-
 
 
     /* Switching to protected mode, following recommendations laid out in
@@ -37,7 +37,7 @@ start:
 1:
     /* 5-7. N/A */
     /* 8. Set up task state segment */
-    movw $0x18, %ax
+    movw $0x28, %ax
     ltr %ax
 
     /* 9. Reload segment registers DS, SS, ES, FS, GS */
@@ -67,6 +67,7 @@ start:
     call cstart
 
     jmp .
+.size start, (. - start)
 
 
 /* Print message.
@@ -74,6 +75,7 @@ start:
  * Parameters:
  *   %si: Pointer to string to print.
  */
+.type msg_print, @function
 msg_print:
     pusha
     movb $0x0E, %ah /* Write character */
@@ -87,10 +89,11 @@ msg_print:
 .end:
     popa
     ret
+.size msg_print, (. - msg_print)
+
 
 boot_message:
     .asciz "\r\nStage2.\r\n"
-
 
 gdtr:
     .word ((gdt_end - gdt) - 1)  /* Limit */
@@ -105,13 +108,19 @@ idtr:
 gdt:
     /* 0x00: Null descriptor */
     .quad 0x00000000
-    /* 0x08: Code segment */
+    /* 0x08: 32-bit Code segment */
     .long 0x0000FFFF
     .long 0x00CF9A00
-    /* 0x10: Data segment */
+    /* 0x10: 32-bit Data segment */
     .long 0x0000FFFF
     .long 0x00CF9200
-    /* 0x18: Task segment */
+    /* 0x18: 16-bit Code segment */
+    .long 0x0000FFFF
+    .long 0x000F9A00
+    /* 0x20: 16-bit Data segment */
+    .long 0x0000FFFF
+    .long 0x000F9200
+    /* 0x28: Task segment */
     .word ((tss_end - tss) - 1)
     .word tss /* @note Since we are in the lower 16-bits of memory, we can just use the address here */
     .long 0x00408900
