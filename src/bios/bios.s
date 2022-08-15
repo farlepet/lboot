@@ -87,6 +87,7 @@ bios_call:
     movw  8(%di), %dx
     movw 10(%di), %si
     movw 12(%di), %di
+    /* @note Not loading EFLAGS, not sure any interrupts use any of those bits as input */
 
     /* @note INT only accepts immediates, so we need to modify the code */
     .byte 0xCD /* INT */
@@ -102,7 +103,12 @@ _int_id:
     movw  %dx,  8(%bp)
     movw  %si, 10(%bp)
     movw  %di, 12(%bp)
-    popw  %bp
+    /* Save EFLAGS */
+    pushfw
+    popw   %ax
+    mov    %ax, 14(%bp)
+
+    popw %bp
 
 
     /*
