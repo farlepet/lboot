@@ -19,7 +19,11 @@ start:
 
     /* 1. Disable interrupts, and NMI */
     cli
-    /* @todo Disable NMI */
+    /* Disable NMI */
+    inb  $0x70, %al
+    orb  $0x80, %al
+    outb %al,  $0x80
+    inb  $0x71, %al
 
     /* 2. Setup GDT */
     lgdt (gdtr)
@@ -53,7 +57,12 @@ start:
 
     /* 11. Re-enable interrupts and NMI */
     /* @todo Properly setup IDT, then we can re-enable interrupts */
-    /* @todo Re-enable NMI */
+    /* sti */
+    /* Enable NMI */
+    /*inb  $0x70, %al
+    andb $0x7F, %al
+    outb %al,  $0x80
+    inb  $0x71, %al*/
 
     /* Enable A20 line @todo Attempt multiple methods, perhaps in C */
     inb   $0x92, %al

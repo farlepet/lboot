@@ -22,6 +22,11 @@ bios_call:
      */
     /* 1. Disable interrupts */
     cli
+    /* Disable NMI */
+    inb  $0x70, %al
+    orb  $0x80, %al
+    outb %al,  $0x80
+    inb  $0x71, %al
 
     /* 2. Disable paging (N/A) */
     /* 3. Transfer control to segment with limit of 0xFFFF */
@@ -59,6 +64,11 @@ bios_call:
 
     /* 9. Re-enable interrupts */
     sti
+    /* Enable NMI */
+    inb  $0x70, %al
+    andb $0x7F, %al
+    outb %al,  $0x80
+    inb  $0x71, %al
 
 
     /*
@@ -135,6 +145,12 @@ _int_id:
 
     /* 11. Re-enable interrupts */
     /* @todo Properly setup IDT, then we can re-enable interrupts */
+    /* sti */
+    /* Enable NMI */
+    /*inb  $0x70, %al
+    andb $0x7F, %al
+    outb %al,  $0x80
+    inb  $0x71, %al*/
 
     popal
     ret
