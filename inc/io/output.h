@@ -46,5 +46,13 @@ void putchar(char ch);
  */
 void puts(const char *str);
 
+/**
+ * @brief Send formatted output to the current output device
+ *
+ * @param fmt Format string
+ * @return int Number of characters sent
+ */
+int printf(const char *fmt, ...);
+
 #endif
 
