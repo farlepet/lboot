@@ -24,6 +24,11 @@ struct output_hand_struct {
     void (*putchar)(output_hand_t *out, char ch);
 };
 
+/**
+ * @brief Set the currently selected output driver
+ *
+ * @param output Output driver to select
+ */
 void output_set(output_hand_t *output);
 
 /**
