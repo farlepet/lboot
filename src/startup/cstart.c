@@ -4,6 +4,8 @@
 #include "io/output.h"
 #include "bios/bios.h"
 #include "storage/bios.h"
+#include "storage/fs/fs.h"
+#include "storage/fs/fat.h"
 
 static void _init_data(void) {
     /* Clear BSS */
@@ -13,6 +15,7 @@ static void _init_data(void) {
 
 static output_hand_t  _vga;
 static storage_hand_t _bootdev;
+static fs_hand_t      _bootfs;
 
 void cstart(void) {
     _init_data();
@@ -28,7 +31,14 @@ void cstart(void) {
         for(;;);
     }
 
-    puts("OK");
+    if(fs_fat_init(&_bootfs, &_bootdev, 0x00)) {
+        puts("Failed initializing filesystem!\n");
+        for(;;);
+    }
+
+    printf("Boot filesystem size: %u KiB\n", (_bootfs.fs_size / 1024));
+    
+    puts("OK\n");
 
     for(;;);
 }

@@ -20,8 +20,10 @@ S2_SRCS = $(S2_SRCDIR)/startup/startup.s \
 		  $(S2_SRCDIR)/stdlib/string.c   \
 		  $(S2_SRCDIR)/io/output.c       \
 		  $(S2_SRCDIR)/io/vga.c          \
-		  $(S2_SRCDIR)/bios/bios.s		 \
-		  $(S2_SRCDIR)/storage/bios.c
+		  $(S2_SRCDIR)/bios/bios.s       \
+		  $(S2_SRCDIR)/storage/bios.c    \
+		  $(S2_SRCDIR)/storage/fs/fs.c   \
+		  $(S2_SRCDIR)/storage/fs/fat.c
 
 S2_OBJS = $(filter %.o,$(patsubst $(S2_SRCDIR)/%.c,$(S2_BUILDDIR)/%.o,$(S2_SRCS)) \
                        $(patsubst $(S2_SRCDIR)/%.s,$(S2_BUILDDIR)/%.o,$(S2_SRCS)))
