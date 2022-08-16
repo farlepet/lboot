@@ -1,7 +1,9 @@
 #include <string.h>
 
 #include "io/vga.h"
+#include "io/output.h"
 #include "bios/bios.h"
+#include "storage/bios.h"
 
 static void _init_data(void) {
     /* Clear BSS */
@@ -9,22 +11,24 @@ static void _init_data(void) {
     memset(&__lboot_bss_begin, 0, (&__lboot_bss_end - &__lboot_bss_begin));
 }
 
+static output_hand_t  _vga;
+static storage_hand_t _bootdev;
+
 void cstart(void) {
     _init_data();
 
-    vga_init();
+    vga_init(&_vga);
+    output_set(&_vga);
 
-    vga_puts("Hello from C!\n");
+    puts("LBoot -- Built "__DATE__"\n");
 
-    /* Test - Clear the screen */
-    bios_call_t call;
-    memset(&call, 0, sizeof(bios_call_t));
-    call.int_n = 0x10;
-    call.ax    = 0x0003;
+    /* @todo Actually use the device ID passed to us from the BIOS */
+    if(storage_bios_init(&_bootdev, 0x00)) {
+        puts("Failed initializing storage!\n");
+        for(;;);
+    }
 
-    bios_call(&call);
-
-    vga_puts("bios_call returned!!\n");
+    puts("OK");
 
     for(;;);
 }

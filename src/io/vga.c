@@ -23,14 +23,19 @@ static struct {
     .pos_y    = 0
 };
 
+static void _vga_clear(void);
+static void _vga_putchar(output_hand_t *out, char ch);
 
-int vga_init(void) {
-    vga_clear();
+int vga_init(output_hand_t *out) {
+    _vga_clear();
+
+    memset(out, 0, sizeof(output_hand_t));
+    out->putchar = _vga_putchar;
 
     return 0;
 }
 
-void vga_clear(void) {
+static void _vga_clear(void) {
     memset(_vga_state.vidmem, 0, ((_vga_state.res_x * 2) * _vga_state.res_y));
 }
 
@@ -44,7 +49,9 @@ static void _vga_scroll(void) {
     memmove(&_vga_state.vidmem[_vga_state.res_x], &_vga_state.vidmem[0], (_vga_state.res_x * (_vga_state.res_y - 1)) * 2);
 }
 
-void vga_putchar(char ch) {
+static void _vga_putchar(output_hand_t *out, char ch) {
+    (void)out;
+
     switch(ch) {
         case '\n':
             _vga_state.pos_x = 0;
@@ -66,12 +73,4 @@ void vga_putchar(char ch) {
         _vga_scroll();
     }
 }
-
-void vga_puts(const char *str) {
-    while(*str) {
-        vga_putchar(*str);
-        str++;
-    }
-}
-
 

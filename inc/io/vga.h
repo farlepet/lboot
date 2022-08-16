@@ -3,29 +3,14 @@
 
 #include <stdint.h>
 
+#include "io/output.h"
+
 /**
  * @brief Initialize VGA driver
- */
-int vga_init(void);
-
-/**
- * @brief Clears the screen
- */
-void vga_clear(void);
-
-/**
- * @brief Print a character to the screen
  *
- * @param ch Character to print
+ * @param out Output device handle to populate
  */
-void vga_putchar(char ch);
-
-/**
- * @brief Print a string to the screen
- *
- * @param str String to pring
- */
-void vga_puts(const char *str);
+int vga_init(output_hand_t *out);
 
 #endif
 
