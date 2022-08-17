@@ -388,18 +388,33 @@ static int _print(char *out, const char *format, __builtin_va_list varg) {
     return nchars;
 }
 
-/* @todo Use shared memory */
+/* Not using memory allocation here, as we may need to print information after
+ * when memory allocation has failed us. */
 static char _printf_buff[1024];
 
-int printf(const char *format, ...) {
+int printf(const char *fmt, ...) {
     __builtin_va_list varg;
-    __builtin_va_start(varg, format);
+    __builtin_va_start(varg, fmt);
 
-    int ret = _print(_printf_buff, format, varg);
+    int ret = _print(_printf_buff, fmt, varg);
 
     puts(_printf_buff);
 
     __builtin_va_end(varg);
     return ret;
+}
+
+void panic(const char *fmt, ...) {
+    __builtin_va_list varg;
+    __builtin_va_start(varg, fmt);
+
+    _print(_printf_buff, fmt, varg);
+
+    puts(_printf_buff);
+
+    __builtin_va_end(varg);
+
+    /* @todo Stack trace */
+    for(;;);
 }
 

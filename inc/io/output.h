@@ -54,5 +54,12 @@ void puts(const char *str);
  */
 int printf(const char *fmt, ...);
 
+/**
+ * @brief Send message and halt execution
+ *
+ * @param fmt Format string
+ */
+void panic(const char *fmt, ...);
+
 #endif
 
