@@ -17,10 +17,11 @@ S2_ASFLAGS = $(S2_CFLAGS)
 
 S2_SRCS = $(S2_SRCDIR)/startup/startup.s \
 		  $(S2_SRCDIR)/startup/cstart.c  \
-		  $(S2_SRCDIR)/stdlib/string.c   \
+		  $(S2_SRCDIR)/bios/bios.s       \
 		  $(S2_SRCDIR)/io/output.c       \
 		  $(S2_SRCDIR)/io/vga.c          \
-		  $(S2_SRCDIR)/bios/bios.s       \
+		  $(S2_SRCDIR)/mm/alloc.c        \
+		  $(S2_SRCDIR)/stdlib/string.c   \
 		  $(S2_SRCDIR)/storage/bios.c    \
 		  $(S2_SRCDIR)/storage/fs/fs.c   \
 		  $(S2_SRCDIR)/storage/fs/fat.c
