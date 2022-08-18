@@ -194,7 +194,7 @@ void *alloc(size_t sz, uint32_t flags) {
 
     if(addr == NULL) {
         /* For now, assuming any failure to allocate is critical. */
-        panic("alloc(%d, %x): Could not allocate memory!");
+        panic("alloc(%d, %x): Could not allocate memory!", sz, flags);
     }
 
     return addr;
