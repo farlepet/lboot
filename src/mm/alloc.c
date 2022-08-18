@@ -92,17 +92,11 @@ static void *_find_free(size_t sz, uint32_t flags, alloc_memrange_t *mrange) {
                 uintptr_t start = ent->addr;
                 uintptr_t end   = start + ent->size;
 
-                /* Force info required memory region */
+                /* Force into required memory region */
                 if(start < mrange->start) {
-                    if(mrange->start > end) {
-                        continue;
-                    }
                     start = mrange->start;
                 }
                 if(end > mrange->end) {
-                    if(mrange->end < start) {
-                        continue;
-                    }
                     end = mrange->end;
                 }
 
@@ -257,6 +251,8 @@ static int _do_free(uintptr_t addr) {
         ent->size += post->size;
         post->flags = 0;
     }
+
+    ent->flags &= ~ALLOCENT_FLAG_USED;
 
     return 0;
 }
