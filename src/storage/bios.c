@@ -1,11 +1,14 @@
 #include <string.h>
 
-#include "storage/bios.h"
 #include "bios/bios.h"
+#include "io/output.h"
+#include "storage/bios.h"
 
 /* @note since we currently allow only a single device open at a time, having
  * this statically declared should be fine. */
 static storage_bios_data_t _bios_data = { 0 };
+
+#define STORAGE_BIOS_DEBUG (0)
 
 static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t size);
 
@@ -36,21 +39,29 @@ int storage_bios_init(storage_hand_t *storage, uint8_t bios_dev) {
 
 static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t offset) {
     if((uint32_t)buff > 0xffff) {
-        /* Address too large for real mode BIOS call. */
-        return -1;
+        panic("Attempted to read from floppy into an invalid memory address!");
     }
 
     bios_call_t call;
     memset(&call, 0, sizeof(bios_call_t));
+
+    offset /= 512;
 
     uint16_t track  = offset / bdata->sectors_per_track;
     uint8_t  sector = (offset % bdata->sectors_per_track) + 1;
     uint8_t  head   = track % bdata->n_heads;
              track  = track / bdata->n_heads;
 
+#if (STORAGE_BIOS_DEBUG)
+    printf(" [%02hu,%02hhu,%02hhu]", track, head, sector);
+#endif
+
     int attempts = 4;
 
     while(--attempts) {
+#if (STORAGE_BIOS_DEBUG)
+        printf(" TRY");
+#endif
         call.int_n = 0x13;
         call.ax    = 0x0201;
         call.bx    = (uint16_t)(uintptr_t)buff;
@@ -77,10 +88,18 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
 }
 
 static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t size) {
+#if (STORAGE_BIOS_DEBUG)
+    printf("_bios_read(..., %p, %d, %d)", buff, offset, size);
+#endif
+
     if((offset % 512) || (size % 512)) {
         /* Currently only support sector-aligned reads */
-        return -1;
+        panic("Address or size not aligned to sector count!");
     }
+    if(offset < 0) {
+        panic("Negative offset!");
+    }
+
     storage_bios_data_t *bdata = (storage_bios_data_t *)storage->data;
 
     size_t pos = 0;
@@ -89,6 +108,9 @@ static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t s
         /* Floppy */
         while (pos < size) {
             if(_floppy_read_sector(bdata, buff + pos, offset + pos)) {
+#if (STORAGE_BIOS_DEBUG)
+                printf(" FAIL\n");
+#endif
                 return -1;
             }
             pos += 512;
@@ -98,6 +120,9 @@ static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t s
         return -1;
     }
 
+#if (STORAGE_BIOS_DEBUG)
+    printf(" OK\n");
+#endif
     return (ssize_t)pos;
 }
 
