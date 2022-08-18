@@ -13,7 +13,7 @@ static void _add_alloc(alloc_ent_t *al);
 void alloc_init(uint32_t base, uint32_t size) {
     uint32_t newbase = base;
     if(newbase % 4) {
-        newbase = (newbase + 4) % 4;
+        newbase += 4 - (newbase % 4);
     }
 
     _first_block = (alloc_block_t *)newbase;
@@ -107,7 +107,7 @@ static void *_find_free(size_t sz, uint32_t flags, alloc_memrange_t *mrange) {
                 }
 
                 if(start % align) {
-                    start = align - (start % align);
+                    start += align - (start % align);
                 }
 
                 /* Check size. Start can increase beyond end in the case of alignment. */
@@ -185,7 +185,7 @@ static alloc_memrange_t _mrange_32b = { .start = 0x00010000, .end = 0xFFFFFFFF }
 
 void *alloc(size_t sz, uint32_t flags) {
     if(!sz) {
-        return NULL;
+        panic("Attempt to alloc 0 bytes!");
     }
 
     alloc_memrange_t *mrange = (flags & ALLOC_FLAG_16B) ? &_mrange_16b : &_mrange_32b;
@@ -193,6 +193,7 @@ void *alloc(size_t sz, uint32_t flags) {
     void *addr = _find_free(sz, flags, mrange);
 
     if(addr == NULL) {
+        /* For now, assuming any failure to allocate is critical. */
         panic("alloc(%d, %x): Could not allocate memory!");
     }
 
