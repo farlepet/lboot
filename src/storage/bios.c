@@ -37,6 +37,16 @@ int storage_bios_init(storage_hand_t *storage, uint8_t bios_dev) {
     return 0;
 }
 
+static void _floppy_reset(uint8_t bios_id) {
+    bios_call_t call;
+    memset(&call, 0, sizeof(bios_call_t));
+
+    call.int_n = 0x13;
+    call.ax    = 0x00;
+    call.dl    = bios_id;
+    bios_call(&call);
+}
+
 static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t offset) {
     if((uint32_t)buff > 0xffff) {
         panic("Attempted to read from floppy into an invalid memory address!");
@@ -76,7 +86,7 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
             break;
         }
 
-        /* @todo Reset controller */
+        _floppy_reset(bdata->bios_id);
     }
 
     if(attempts == 0) {
