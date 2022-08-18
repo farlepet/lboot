@@ -46,7 +46,7 @@ static void _vga_place_char(uint8_t x, uint8_t y, char ch) {
 }
 
 static void _vga_scroll(void) {
-    memmove(&_vga_state.vidmem[_vga_state.res_x], &_vga_state.vidmem[0], (_vga_state.res_x * (_vga_state.res_y - 1)) * 2);
+    memmove(&_vga_state.vidmem[0], &_vga_state.vidmem[_vga_state.res_x], (_vga_state.res_x * (_vga_state.res_y - 1)) * 2);
 }
 
 static void _vga_putchar(output_hand_t *out, char ch) {
