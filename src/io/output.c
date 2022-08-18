@@ -415,6 +415,8 @@ void panic(const char *fmt, ...) {
     __builtin_va_end(varg);
 
     /* @todo Stack trace */
-    for(;;);
+    for(;;) {
+        asm volatile("hlt");
+    }
 }
 

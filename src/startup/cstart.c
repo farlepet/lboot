@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stddef.h>
 
 #include "mm/alloc.h"
 #include "io/vga.h"
@@ -44,8 +45,17 @@ void cstart(void) {
 
     printf("Boot filesystem size: %u KiB\n", (_bootfs.fs_size / 1024));
     
+    fs_file_t stage2;
+    if(_bootfs.find(&_bootfs, NULL, &stage2, "STAGE2.BIN")) {
+        puts("Failed to find STAGE2.BIN!\n");
+        for(;;);
+    }
+    printf("Stage 2 file size: %d B\n", stage2.size);
+
     puts("OK\n");
 
-    for(;;);
+    for(;;) {
+        asm volatile("hlt");
+    }
 }
 

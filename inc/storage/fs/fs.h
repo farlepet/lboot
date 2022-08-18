@@ -28,7 +28,7 @@ struct fs_hand_struct {
      * @param off Offset into file to start reading at
      * @return ssize_t Number of bytes read on success, else < 0
      */
-    ssize_t (*read)(fs_hand_t *fs, fs_file_t *file, void *buf, size_t sz, off_t off);
+    ssize_t (*read)(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t sz, off_t off);
 
     /**
      * @brief Find a file within a directory
