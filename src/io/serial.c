@@ -49,7 +49,7 @@ int serial_init(output_hand_t *out, uint16_t port) {
 static void _serial_putchar(output_hand_t *out, char ch) {
     const serial_data_t *sdata = (serial_data_t *)out->data;
     
-    while(!(inb(SERIAL_REG_MSR(sdata->port)) & (1U << SERIALREG_LSR_THRE__POS))) {}
+    while(!(inb(SERIAL_REG_LSR(sdata->port)) & (1U << SERIALREG_LSR_THRE__POS))) {}
 
     outb(SERIAL_REG_DATA(sdata->port), ch);
 }
