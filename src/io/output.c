@@ -420,3 +420,16 @@ void panic(const char *fmt, ...) {
     }
 }
 
+#define PRINTHEX_ROWSZ (24) /**< Bytes to print per row - chosen to work well on 80-column displays. */
+
+void print_hex(const void *data, size_t len) {
+    const uint8_t *bytes = (const uint8_t *)data;
+
+    for(size_t i = 0; i < len; i += PRINTHEX_ROWSZ) {
+        for(size_t j = 0; (j < PRINTHEX_ROWSZ) && ((j + i) < len); j++) {
+            printf("%02x ", bytes[i + j]);
+        }
+        printf("\n");
+    }
+}
+

@@ -61,5 +61,13 @@ int printf(const char *fmt, ...);
  */
 void panic(const char *fmt, ...);
 
+/**
+ * @brief Print data has hex
+ *
+ * @param data Data to print
+ * @param len Length of data in bytes
+ */
+void print_hex(const void *data, size_t len);
+
 #endif
 
