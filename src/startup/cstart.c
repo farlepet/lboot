@@ -2,11 +2,14 @@
 #include <stddef.h>
 
 #include "mm/alloc.h"
-#include "io/vga.h"
 #include "io/output.h"
+#include "io/serial.h"
+#include "io/vga.h"
 #include "storage/bios.h"
 #include "storage/fs/fs.h"
 #include "storage/fs/fat.h"
+
+#define USE_SERIAL (0)
 
 static void _init_data(void) {
     /* Clear BSS */
@@ -15,6 +18,9 @@ static void _init_data(void) {
 }
 
 static output_hand_t  _vga;
+#if (USE_SERIAL)
+static output_hand_t  _serial;
+#endif
 static storage_hand_t _bootdev;
 static fs_hand_t      _bootfs;
 
@@ -29,6 +35,11 @@ void cstart(void) {
      * Realistically, it's unlikely this will ever be used on a system with
      * less than 1 MiB of RAM. */
     alloc_init((uint32_t)&__lboot_end, 0x80000 - (uint32_t)&__lboot_end);
+
+#if (USE_SERIAL)
+    serial_init(&_serial, 0x3f8);
+    output_set(&_serial);
+#endif
 
     puts("LBoot -- Built "__DATE__"\n");
 

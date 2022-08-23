@@ -213,6 +213,10 @@ static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *de
 }
 
 static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *name) {
+#if (FS_FAT_DEBUG)
+    printf("_fat_find %s\n", name);
+#endif
+
     const fat_data_t *fdata = (fat_data_t *)fs->data;
 
     if(dir == NULL) {
@@ -240,7 +244,12 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
         return -1;
     }
 
-    for(unsigned i = 0; i < (file->size / sizeof(fat_dirent_t)); i++) {
+    for(unsigned i = 0; i < (dir->size / sizeof(fat_dirent_t)); i++) {
+#if (FS_FAT_DEBUG)
+        if(dirents[i].filename[0]) {
+            printf("  %3u: %s\n", i, dirents[i].filename);
+        }
+#endif
         if(!_fat_strcmp(dirents[i].filename, name)) {
             _fat_pop_file(fs, file, &dirents[i]);
             free(dirents);

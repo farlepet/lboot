@@ -99,7 +99,7 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
 
 static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t size) {
 #if (STORAGE_BIOS_DEBUG)
-    printf("_bios_read(..., %p, %d, %d)", buff, offset, size);
+    printf("_bios_read(..., %p, %5d, %4d)", buff, offset, size);
 #endif
 
     if((offset % 512) || (size % 512)) {
@@ -131,8 +131,17 @@ static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t s
     }
 
 #if (STORAGE_BIOS_DEBUG)
+#  if (STORAGE_BIOS_DEBUG > 1)
+    uint16_t chksum = 0;
+    uint8_t *data   = buff;
+    for(size_t i = 0; i < size; i++) {
+        chksum += data[i];
+    }
+    printf(" [CHK: %4x]", chksum);
+#  endif
     printf(" OK\n");
 #endif
+
     return (ssize_t)pos;
 }
 
