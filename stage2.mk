@@ -36,9 +36,6 @@ $(STAGE2): $(S2_OBJS)
 	$(Q) $(LD) $(S2_LDFLAGS) -o $(STAGE2).elf $(S2_OBJS)
 	$(Q) $(OBJCOPY) -O binary --only-section=.text --only-section=.rodata --only-section=.data $(STAGE2).elf $@
 
-$(S2_BUILDDIR): $(BUILDDIR)
-	$(Q) mkdir -p $@
-
 
 $(S2_BUILDDIR)/%.o: $(S2_SRCDIR)/%.c
 	@echo -e "\033[32m    \033[1mCC\033[21m    \033[34m$<\033[0m"
