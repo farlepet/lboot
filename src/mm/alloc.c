@@ -16,6 +16,12 @@ void alloc_init(uint32_t base, uint32_t size) {
         newbase += 4 - (newbase % 4);
     }
 
+    printf("Available Low Memory:\n"
+           "  < 64 KiB: %3u KiB\n"
+           "  > 64 KiB: %3u KiB\n\n",
+           (0x10000 - base) / 1024,
+           (size - (0x10000 - base)) / 1024);
+
     _first_block = (alloc_block_t *)newbase;
     newbase += sizeof(alloc_block_t);
     memset(_first_block, 0, sizeof(alloc_block_t));

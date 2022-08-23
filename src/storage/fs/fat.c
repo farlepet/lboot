@@ -79,6 +79,10 @@ static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num)
     off_t fat_entry_offset = fdata->fat_offset + ((clust_num * 3) / 2);
 
     off_t read_addr = fat_entry_offset - (fat_entry_offset % fdata->sector_size);
+    /* @note This could add a lot of overhead if reading a largely linear file,
+     * as each cluster will require two reads - one to find the next cluster,
+     * and another to actually read it. It maybe useful to create a buffer or
+     * recently used FAT clusters. */
     if(fs->storage->read(fs->storage, tmp, read_addr, fdata->cluster_size) != fdata->cluster_size) {
         return 0xffffffff;
     }
