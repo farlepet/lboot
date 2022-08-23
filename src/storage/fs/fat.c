@@ -227,6 +227,7 @@ static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *de
     fat_file_data_t *filedata = (fat_file_data_t *)alloc(sizeof(fat_file_data_t), 0);
     filedata->first_cluster = fdata->data_offset + ((dent->start_cluster - 2) * fdata->cluster_size);
 
+    file->fs   = fs;
     file->data = filedata;
     file->size = dent->filesize;
 }

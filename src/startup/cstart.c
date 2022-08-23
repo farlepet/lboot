@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "mm/alloc.h"
+#include "exec/exec.h"
 #include "io/output.h"
 #include "io/serial.h"
 #include "io/vga.h"
@@ -23,6 +24,10 @@ static output_hand_t  _serial;
 #endif
 static storage_hand_t _bootdev;
 static fs_hand_t      _bootfs;
+static exec_hand_t    _exec;
+
+/* Eventually, this will be loaded from the config. */
+#define KERNEL_PATH "STAGE2.ELF"
 
 void cstart(void) {
     _init_data();
@@ -45,23 +50,32 @@ void cstart(void) {
 
     /* @todo Actually use the device ID passed to us from the BIOS */
     if(storage_bios_init(&_bootdev, 0x00)) {
-        puts("Failed initializing storage!\n");
-        for(;;);
+        panic("Failed initializing storage!\n");
     }
 
     if(fs_fat_init(&_bootfs, &_bootdev, 0x00)) {
-        puts("Failed initializing filesystem!\n");
-        for(;;);
+        panic("Failed initializing filesystem!\n");
     }
 
     printf("Boot filesystem size: %u KiB\n", (_bootfs.fs_size / 1024));
     
-    fs_file_t stage2;
-    if(_bootfs.find(&_bootfs, NULL, &stage2, "STAGE2.BIN")) {
-        puts("Failed to find STAGE2.BIN!\n");
-        for(;;);
+    const char *kernel_path = KERNEL_PATH;
+
+    printf("Loading kernel `%s`\n", kernel_path);
+
+    fs_file_t kernel;
+    if(_bootfs.find(&_bootfs, NULL, &kernel, kernel_path)) {
+        panic("Failed to find kernel!\n");
     }
-    printf("Stage 2 file size: %d B\n", stage2.size);
+    printf("Kernel file size: %d B\n", kernel.size);
+
+    if(exec_open(&_exec, &kernel)) {
+        panic("Failed to open kernel for execution!\n");
+    }
+
+    if(exec_exec(&_exec)) {
+        panic("Failed to load and execute kernel!\n");
+    }
 
     puts("OK\n");
 

@@ -58,10 +58,11 @@ struct fs_hand_struct {
  * @brief File handle
  */
 struct fs_file_struct {
-    void    *data; /**< Data pointer used by the FS driver */
+    fs_hand_t *fs;   /**< Pointer to handle of owning filesystem. */
+    void      *data; /**< Data pointer used by the FS driver */
 
-    size_t   size; /**< File size in bytes */
-    uint32_t attr; /**< File attributes */
+    size_t     size; /**< File size in bytes */
+    uint32_t   attr; /**< File attributes */
 #define FS_FILEATTR_FILE      (1UL << 0)
 #define FS_FILEATTR_DIRECTORY (1UL << 1)
 };
