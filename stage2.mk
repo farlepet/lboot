@@ -10,7 +10,7 @@ S2_INCDIR = inc
 S2_LDFLAGS = -T stage2.ld -melf_i386
 S2_CFLAGS  = -m32 -march=i386 -fno-pic \
 			 -I $(S2_INCDIR) \
-			 -nostdlib -nostdinc -ffreestanding -Wall -Wextra -Werror -O2 \
+			 -nostdlib -nostdinc -ffreestanding -Wall -Wextra -Werror -Os \
 			 -g -fno-stack-protector -fdata-sections -ffunction-sections
 S2_ASFLAGS = $(S2_CFLAGS)
 
