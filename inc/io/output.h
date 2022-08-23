@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define VERBOSE_PANIC (1)
+
 typedef struct output_hand_struct output_hand_t;
 
 /**
@@ -59,7 +61,16 @@ int printf(const char *fmt, ...);
  *
  * @param fmt Format string
  */
-void panic(const char *fmt, ...);
+void _panic(const char *fmt, ...);
+
+#if (VERBOSE_PANIC)
+#  define __panic_stringify1(X) #X
+#  define __panic_stringify2(X) __panic_stringify1(X)
+
+#  define panic(...) _panic("\nPANIC at " __FILE__ ":" __panic_stringify2(__LINE__) ":\n  " __VA_ARGS__)
+#else
+#  define panic _panic
+#endif
 
 /**
  * @brief Print data has hex

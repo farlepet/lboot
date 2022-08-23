@@ -404,7 +404,7 @@ int printf(const char *fmt, ...) {
     return ret;
 }
 
-void panic(const char *fmt, ...) {
+void _panic(const char *fmt, ...) {
     __builtin_va_list varg;
     __builtin_va_start(varg, fmt);
 
