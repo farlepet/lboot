@@ -125,14 +125,28 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
     printf("_fat_read(..., %p, %d, %d)\n", buf, sz, off);
 #endif
 
+    if((off + sz) > file->size) {
+        panic("Attempt to read past end of file!");
+    }
+
     const fat_data_t      *fdata    = (fat_data_t *)fs->data;
     const fat_file_data_t *filedata = (fat_file_data_t *)file->data;
 
     void *tmp = alloc(fdata->cluster_size, ALLOC_FLAG_16B);
 
     off_t cluster = filedata->first_cluster;
-    /* @todo Utilize off */
-    (void)off;
+    /* Get to the desired cluster. */
+    while(off > fdata->cluster_size) {
+        cluster = _fat_get_next_cluster(fs, tmp, cluster);
+        if(!cluster) {
+#if (FS_FAT_DEBUG)
+            printf("ERROR: Unexpected end of file!\n");
+#endif
+            free(tmp);
+            return -1;
+        }
+        off -= fdata->cluster_size;
+    }
 
 
     size_t pos = 0;
@@ -145,10 +159,10 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
             return -1;
         }
 
-        if((sz - pos) <= fdata->cluster_size) {
-            memcpy(buf + pos, tmp, sz - pos);
+        if((sz - pos) <= (size_t)(fdata->cluster_size - off)) {
+            memcpy(buf + pos, tmp + off, sz - pos);
         } else {
-            memcpy(buf + pos, tmp, fdata->cluster_size);
+            memcpy(buf + pos, tmp, fdata->cluster_size - off);
 
             cluster = _fat_get_next_cluster(fs, tmp, cluster);
             if(!cluster) {
@@ -160,6 +174,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
             }
         }
 
+        off = 0;
         pos += fdata->cluster_size;
     }
 
@@ -235,26 +250,30 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
         return 0;
     }
 
-    /* Should be fine to allocate all at once, as long as the directory is not
-     * too large. */
-    fat_dirent_t *dirents = (fat_dirent_t *)alloc(dir->size, 0);
+    fat_dirent_t *dirents = (fat_dirent_t *)alloc(fdata->cluster_size, 0);
 
-    if(_fat_read(fs, dir, dirents, dir->size, 0) != (ssize_t)dir->size) {
-        free(dirents);
-        return -1;
-    }
-
-    for(unsigned i = 0; i < (dir->size / sizeof(fat_dirent_t)); i++) {
-#if (FS_FAT_DEBUG)
-        if(dirents[i].filename[0]) {
-            printf("  %3u: %s\n", i, dirents[i].filename);
-        }
-#endif
-        if(!_fat_strcmp(dirents[i].filename, name)) {
-            _fat_pop_file(fs, file, &dirents[i]);
+    off_t pos = 0;
+    while((size_t)pos < dir->size) {
+        /* Read one cluster at a time. */
+        if(_fat_read(fs, dir, dirents, fdata->cluster_size, pos) != fdata->cluster_size) {
             free(dirents);
-            return 0;
+            return -1;
         }
+
+        for(unsigned i = 0; i < (dir->size / sizeof(fat_dirent_t)); i++) {
+#if (FS_FAT_DEBUG)
+            if(dirents[i].filename[0]) {
+                printf("  %3u: %s\n", (i + (pos / sizeof(fat_dirent_t))), dirents[i].filename);
+            }
+#endif
+            if(!_fat_strcmp(dirents[i].filename, name)) {
+                _fat_pop_file(fs, file, &dirents[i]);
+                free(dirents);
+                return 0;
+            }
+        }
+
+        pos += fdata->cluster_size;
     }
 
     free(dirents);
