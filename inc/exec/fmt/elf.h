@@ -2,6 +2,7 @@
 #define LBOOT_EXEC_FMT_ELF_H
 
 #include "exec/exec.h"
+#include "exec/fmt/elf_types.h"
 
 /**
  * @brief Test if file is in the ELF format.
@@ -20,7 +21,6 @@ int exec_elf_test(exec_hand_t *exec, void *first_chunk);
  */
 int exec_elf_init(exec_hand_t *exec);
 
-#define ELF_IDENT (0x464c457fUL) /**< ELF magic number - 0x7f + "ELF" */
 
 #endif
 
