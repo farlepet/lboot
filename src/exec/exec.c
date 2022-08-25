@@ -5,6 +5,7 @@
 #include "mm/alloc.h"
 
 #include "exec/fmt/elf.h"
+#include "exec/fmt/flat.h"
 
 int exec_open(exec_hand_t *exec, fs_file_t *file) {
     memset(exec, 0, sizeof(*exec));
@@ -36,7 +37,9 @@ int exec_open(exec_hand_t *exec, fs_file_t *file) {
             }
             break;
         case EXEC_FILEFMT_FLAT:
-            /* @todo */
+            if(exec_flat_init(exec)) {
+                return -1;
+            }
             break;
         default:
             return -1;
