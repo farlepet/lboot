@@ -23,6 +23,13 @@ typedef struct {
 
     fs_file_t       rootdir;       /**< File representing root directory - internal use only*/
     fat_file_data_t _rootdir_data; /**< Data for rootdir file, preventing an extra allocation - internal use only */
+
+#define FAT_CACHE_CNT (4) /**< Number of FAT clusters to cache */
+    struct {
+        off_t   clust[FAT_CACHE_CNT]; /**< Offset of cached clusters into FS */
+        uint8_t rank[FAT_CACHE_CNT];  /**< Rank of cache entry, representing which was last used */
+        void   *buf;                  /**< Buffer of cluster caches */
+    } cache;
 } fat_data_t;
 
 static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t sz, off_t off);
@@ -67,24 +74,88 @@ int fs_fat_init(fs_hand_t *fs, storage_hand_t *storage, off_t off) {
     /* @note Currently only supporting FAT12 */
     fs->fs_size = bootsec->total_sectors * fdata->sector_size;
 
+    fdata->cache.buf = alloc(fdata->cluster_size * FAT_CACHE_CNT, 0);
+
     free(bootsec);
 
     return 0;
 }
 
+/**
+ * @brief Touch FAT cache entry, setting its rank to zero
+ *
+ * @param fdata FAT data structure
+ * @param idx Cache entry to touch
+ */
+static void _fat_cache_touch(fat_data_t *fdata, unsigned idx) {
+    for(unsigned i = 0; i < FAT_CACHE_CNT; i++) {
+        if(i == idx) {
+            continue;
+        }
+        if(fdata->cache.rank[i] < fdata->cache.rank[idx]) {
+            fdata->cache.rank[i]++;
+        }
+    }
+    fdata->cache.rank[idx] = 0;
+}
+
+/**
+ * @brief Retrieve cached FAT entry, if available
+ *
+ * @param fdata FAT data structure
+ * @param buf Buffer to store cluster into
+ * @param clust Cluster to search for
+ * @return 1 on cache hit, 0 on cache miss
+ */
+static int _fat_try_cache(fat_data_t *fdata, void *buf, off_t clust) {
+    for(unsigned i = 0; i < FAT_CACHE_CNT; i++) {
+        if(fdata->cache.clust[i] == clust) {
+            if(fdata->cache.rank[i] != 0) {
+                /* Update rank due to usage */
+                _fat_cache_touch(fdata, i);
+            }
+            memcpy(buf, fdata->cache.buf + (i * fdata->cluster_size), fdata->cluster_size);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @brief Add cached FAT entry, overwriting oldest entry
+ *
+ * @param fdata FAT data structure
+ * @param buf Buffer containing cluster data
+ * @param clust Cluster address to store as
+ */
+static void _fat_add_cache(fat_data_t *fdata, void *buf, off_t clust) {
+    unsigned entry = 0;
+
+    /* Find highest-rank (oldest) cache entry */
+    for(unsigned i = 1; i < FAT_CACHE_CNT; i++) {
+        if(fdata->cache.rank[i] > fdata->cache.rank[entry]) {
+            entry = i;
+        }
+    }
+
+    fdata->cache.clust[entry] = clust;
+    memcpy(fdata->cache.buf + (entry * fdata->cluster_size), buf, fdata->cluster_size);
+    _fat_cache_touch(fdata, entry);
+}
+
 static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num) {
-    const fat_data_t *fdata = (fat_data_t *)fs->data;
+    fat_data_t *fdata = (fat_data_t *)fs->data;
 
     /* @note Only FAT12 at the moment */
     off_t fat_entry_offset = fdata->fat_offset + ((clust_num * 3) / 2);
 
     off_t read_addr = fat_entry_offset - (fat_entry_offset % fdata->sector_size);
-    /* @note This could add a lot of overhead if reading a largely linear file,
-     * as each cluster will require two reads - one to find the next cluster,
-     * and another to actually read it. It maybe useful to create a buffer or
-     * recently used FAT clusters. */
-    if(fs->storage->read(fs->storage, tmp, read_addr, fdata->cluster_size) != fdata->cluster_size) {
-        return 0xffffffff;
+
+    if(!_fat_try_cache(fdata, tmp, read_addr)) {
+        if(fs->storage->read(fs->storage, tmp, read_addr, fdata->cluster_size) != fdata->cluster_size) {
+            return 0xffffffff;
+        }
+        _fat_add_cache(fdata, tmp, read_addr);
     }
 
     uint16_t fat_entry = *(uint16_t *)(tmp + (fat_entry_offset - read_addr));
