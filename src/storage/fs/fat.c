@@ -118,7 +118,7 @@ static off_t _fat_get_next_cluster(fs_hand_t *fs, void *tmp, off_t curr_clust) {
 
     off_t next_clust = 0;
     if((fat_entry >= 0x002) && (fat_entry <= 0xff0)) {
-        next_clust = fdata->data_offset + ((fat_entry - 1) * fdata->cluster_size);
+        next_clust = fdata->data_offset + ((fat_entry - 2) * fdata->cluster_size);
     }
 
     return next_clust;
