@@ -143,13 +143,10 @@ static void _fat_add_cache(fat_data_t *fdata, void *buf, off_t clust) {
     _fat_cache_touch(fdata, entry);
 }
 
-static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num) {
+static uint32_t _fat_read_fat_data(fs_hand_t *fs, void *tmp, off_t off, uint8_t sz) {
     fat_data_t *fdata = (fat_data_t *)fs->data;
 
-    /* @note Only FAT12 at the moment */
-    off_t fat_entry_offset = fdata->fat_offset + ((clust_num * 3) / 2);
-
-    off_t read_addr = fat_entry_offset - (fat_entry_offset % fdata->sector_size);
+    off_t read_addr = off - (off % fdata->sector_size);
 
     if(!_fat_try_cache(fdata, tmp, read_addr)) {
         if(fs->storage->read(fs->storage, tmp, read_addr, fdata->cluster_size) != fdata->cluster_size) {
@@ -158,7 +155,33 @@ static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num)
         _fat_add_cache(fdata, tmp, read_addr);
     }
 
-    uint16_t fat_entry = *(uint16_t *)(tmp + (fat_entry_offset - read_addr));
+    uint32_t data = *(uint32_t *)(tmp + (off - read_addr));
+
+    switch(sz) {
+        case 1: return data & 0x000000FF;
+        case 2: return data & 0x0000FFFF;
+        case 3: return data & 0x00FFFFFF;
+        case 4: return data & 0xFFFFFFFF;
+    }
+
+    return 0xFFFFFFFF;
+}
+
+static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num) {
+    fat_data_t *fdata = (fat_data_t *)fs->data;
+
+    /* @note Only FAT12 at the moment */
+    off_t fat_entry_offset = fdata->fat_offset + ((clust_num * 3) / 2);
+
+    uint16_t fat_entry = 0;
+    if((fat_entry_offset % fdata->cluster_size) == (fdata->cluster_size - 1)) {
+        /* Split across cluster boundry */
+        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 1) | 
+                    (_fat_read_fat_data(fs, tmp, fat_entry_offset + 1, 1) << 8);
+    } else {
+        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 2); 
+    }
+
     if(clust_num & 1) {
         fat_entry >>= 4;
     }
