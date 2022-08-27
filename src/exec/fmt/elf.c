@@ -4,6 +4,8 @@
 #include "io/output.h"
 #include "mm/alloc.h"
 
+#define DEBUG_EXEC_ELF (0)
+
 typedef struct exec_elf_data_struct {
     elf_header_t *ehdr; /**< Buffer containing ELF file header */
     elf32_phdr_t *phdr; /**< Buffer containing ELF program headers */
@@ -41,7 +43,7 @@ static int _elf_phdr_check(exec_hand_t *exec) {
     for(unsigned i = 0; i < edata->ehdr->e32.phnum; i++) {
         elf32_phdr_t *phdr = &edata->phdr[i];
         if(phdr->type == ELF_PHDR_TYPE_LOAD) {
-            if(phdr->vaddr < 0x10000) {
+            if(phdr->vaddr < 0x100000) {
                 printf("_elf_phdr_check: Contains segment < 1 MiB - unsupported.\n");
                 return -1;
             }
@@ -79,7 +81,7 @@ static int _elf_prepare(exec_hand_t *exec) {
         goto elf_prep_fail_1;
     }
 
-    if(edata->ehdr->e32.entry < 0x10000) {
+    if(edata->ehdr->e32.entry < 0x100000) {
         printf("_elf_prepare: Entrypoint < 1 MiB - unsupported.\n");
         goto elf_prep_fail_1;
     }
@@ -88,31 +90,79 @@ static int _elf_prepare(exec_hand_t *exec) {
     edata->phdr = alloc(phdr_tot_size, 0);
 
     if(fs->read(fs, exec->file, edata->phdr, phdr_tot_size, edata->ehdr->e32.phoff) != (ssize_t)phdr_tot_size) {
-        return -1;
         goto elf_prep_fail_2;
     }
 
     if(_elf_phdr_check(exec)) {
-        return -1;
         goto elf_prep_fail_2;
     }
 
-    /* @todo */
+    exec->entrypoint = edata->ehdr->e32.entry;
+
     return 0;
 
-elf_prep_fail_1:
+elf_prep_fail_2:
     free(edata->phdr);
 
-elf_prep_fail_2:
+elf_prep_fail_1:
     free(edata->ehdr);
     free(edata);
 
     return -1;
 }
 
-static int _elf_load(exec_hand_t *exec) {
-    (void)exec;
-    /* @todo */
+/**
+ * @brief Loops through program headers and loads executable into memory accordingly
+ *
+ * @param exec Exec handle
+ * @return 0 on success, < 0 on failure
+ */
+static int _elf_load_phdr(exec_hand_t *exec) {
+    exec_elf_data_t *edata = exec->data;
+
+    fs_hand_t *fs = exec->file->fs;
+    
+    for(unsigned i = 0; i < edata->ehdr->e32.phnum; i++) {
+        elf32_phdr_t *phdr = &edata->phdr[i];
+        if(phdr->type == ELF_PHDR_TYPE_LOAD) {
+            /* @note Using paddr, as if the kernel is linked to higher memory,
+             * we may attempt to load into non-existent memory. The kernel
+             * should do the mapping itself after it is loaded. */
+            if(phdr->filesz) {
+#if (DEBUG_EXEC_ELF)
+                printf("  Loading  %6u bytes from file into %p.\n", phdr->filesz, phdr->paddr);
+#endif
+                if(fs->read(fs, exec->file, (void *)phdr->paddr, phdr->filesz, phdr->offset) != (ssize_t)phdr->filesz) {
+                    printf("_elf_load_phdr: Failure reading %u bytes of data into %p from %p\n", phdr->filesz, phdr->paddr, phdr->offset);
+                    return -1;
+                }
+            }
+            if(phdr->filesz < phdr->memsz) {
+#if (DEBUG_EXEC_ELF)
+                printf("  Clearing %6u bytes at             %p.\n", phdr->memsz - phdr->filesz, phdr->paddr + phdr->filesz);
+#endif
+                memset((void *)(phdr->paddr + phdr->filesz), 0, phdr->memsz - phdr->filesz);
+            }
+        }
+    }
+
     return 0;
+}
+
+static int _elf_load(exec_hand_t *exec) {
+    exec_elf_data_t *edata = exec->data;
+
+    if(_elf_load_phdr(exec)) {
+        goto elf_load_fail;
+    }
+
+    return 0;
+
+elf_load_fail:
+    free(edata->phdr);
+    free(edata->ehdr);
+    free(edata);
+
+    return -1;
 }
 

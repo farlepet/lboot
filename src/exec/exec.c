@@ -7,6 +7,8 @@
 #include "exec/fmt/elf.h"
 #include "exec/fmt/flat.h"
 
+#define DEBUG_EXEC (0)
+
 int exec_open(exec_hand_t *exec, fs_file_t *file) {
     memset(exec, 0, sizeof(*exec));
 
@@ -48,6 +50,18 @@ int exec_open(exec_hand_t *exec, fs_file_t *file) {
     return 0;
 }
 
+__attribute__((optimize("-O0")))
+static void _exec_enter(uintptr_t entrypoint, uintptr_t mboot_ptr) {
+    /* EAX: Magic number
+     * EBX: Pointer to multiboot header */
+    asm volatile("mov %0,          %%edx\n"
+                 "mov $0x36D76289, %%eax\n"
+                 "mov %1,          %%ebx\n"
+                 "jmp *%%edx\n" ::
+                 "m"(entrypoint), "m"(mboot_ptr));
+}
+
+__attribute__((optimize("-O0")))
 int exec_exec(exec_hand_t *exec) {
     if(exec->prepare(exec)) {
         return -1;
@@ -56,8 +70,12 @@ int exec_exec(exec_hand_t *exec) {
         return -1;
     }
 
+#if (DEBUG_EXEC)
+    printf("  Jumping into kernel at %p.\n", exec->entrypoint);
+#endif
+
     /* @todo Set up multiboot */
-    /* @todo Jump into process */
+    _exec_enter(exec->entrypoint, 0);
     
     return 0;
 }
