@@ -211,7 +211,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
 
     off_t cluster = filedata->first_cluster;
     /* Get to the desired cluster. */
-    while(off > fdata->cluster_size) {
+    while(off >= fdata->cluster_size) {
         cluster = _fat_get_next_cluster(fs, tmp, cluster);
         if(!cluster) {
 #if (FS_FAT_DEBUG)
