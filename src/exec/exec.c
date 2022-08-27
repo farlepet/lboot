@@ -1,6 +1,8 @@
+#include <stddef.h>
 #include <string.h>
 
 #include "exec/exec.h"
+#include "exec/multiboot.h"
 #include "io/output.h"
 #include "mm/alloc.h"
 
@@ -50,8 +52,24 @@ int exec_open(exec_hand_t *exec, fs_file_t *file) {
     return 0;
 }
 
-__attribute__((optimize("-O0")))
-static void _exec_enter(uintptr_t entrypoint, uintptr_t mboot_ptr) {
+static int _exec_detect_multiboot(exec_hand_t *exec) {
+    /* Assuming data_begin is 8-byte aligned. */
+    uint32_t *search = (uint32_t *)exec->data_begin;
+
+    /* Multiboot header must be within first 8 KiB of data, and be 8-byte aligned. */
+    for(unsigned i = 0; i < 2048; i+=2) {
+        if(search[i] == MULTIBOOT1_HEAD_MAGIC) {
+            return 1;
+        } if(search[i] == MULTIBOOT2_HEAD_MAGIC) {
+            exec->multiboot = (multiboot2_head_t *)&search[i];
+            return 2;
+        }
+    }
+
+    return 0;
+}
+
+static void _exec_enter_multiboot2(uintptr_t entrypoint, uintptr_t mboot_ptr) {
     /* EAX: Magic number
      * EBX: Pointer to multiboot header */
     asm volatile("mov %0,          %%edx\n"
@@ -61,7 +79,14 @@ static void _exec_enter(uintptr_t entrypoint, uintptr_t mboot_ptr) {
                  "m"(entrypoint), "m"(mboot_ptr));
 }
 
-__attribute__((optimize("-O0")))
+static void _exec_enter(uintptr_t entrypoint) {
+    /* EAX: Magic number
+     * EBX: Pointer to multiboot header */
+    asm volatile("mov %0,          %%edx\n"
+                 "jmp *%%edx\n" ::
+                 "m"(entrypoint));
+}
+
 int exec_exec(exec_hand_t *exec) {
     if(exec->prepare(exec)) {
         return -1;
@@ -70,12 +95,26 @@ int exec_exec(exec_hand_t *exec) {
         return -1;
     }
 
+    int mboot = _exec_detect_multiboot(exec);
+    if(mboot == 1) {
+        printf("Kernel uses multiboot 1 - this is unsupported.\n");
+        return -1;
+    } else if(mboot == 2) {
 #if (DEBUG_EXEC)
-    printf("  Jumping into kernel at %p.\n", exec->entrypoint);
+        printf("Multiboot 2 header found at %p\n", exec->multiboot);
 #endif
-
-    /* @todo Set up multiboot */
-    _exec_enter(exec->entrypoint, 0);
+        multiboot2_t *mboot2 = multiboot2_parse(exec->multiboot);
+        if(mboot2 == NULL) {
+            return -1;
+        }
+        /* @todo Set up multiboot */
+        _exec_enter_multiboot2(exec->entrypoint, (uintptr_t)mboot2);
+    } else {
+#if (DEBUG_EXEC)
+        printf("Jumping into kernel at %p.\n", exec->entrypoint);
+#endif
+        _exec_enter(exec->entrypoint);
+    }
     
     return 0;
 }

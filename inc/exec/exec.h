@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "storage/fs/fs.h"
+#include "exec/multiboot_types.h"
 
 #define EXEC_FIRSTCHUNK_SZ (512) /**< Size of first chunk to read when determining file type. */
 
@@ -22,13 +23,15 @@ typedef enum exec_filefmt_enum {
  * @brief Executable handle
  */
 struct exec_hand_struct {
-    exec_filefmt_e  fmt;        /**< Format executable is in. */
-    void           *data;       /**< Data for use by particular exec handler. */
+    exec_filefmt_e     fmt;        /**< Format executable is in. */
+    void              *data;       /**< Data for use by particular exec handler. */
 
-    uintptr_t       data_begin; /**< First address of data in file, location of multiboot header if present. */
-    uintptr_t       entrypoint; /**< Address of executable entrypoint. (phys == virt) */
+    uintptr_t          data_begin; /**< First address of data loaded from file. */
+    uintptr_t          entrypoint; /**< Address of executable entrypoint. (phys == virt) */
 
-    fs_file_t      *file;       /**< File containing executable */
+    multiboot2_head_t *multiboot;  /**< Location of multiboot header, if applicable */
+
+    fs_file_t         *file;       /**< File containing executable */
 
     /**
      * @brief Grab executable information from file, and determine placement

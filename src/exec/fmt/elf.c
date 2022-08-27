@@ -24,6 +24,8 @@ int exec_elf_init(exec_hand_t *exec) {
     exec->prepare = _elf_prepare;
     exec->load    = _elf_load;
 
+    exec->data_begin = 0xFFFFFFFF;
+
     exec_elf_data_t *edata = alloc(sizeof(exec_elf_data_t), 0);
     memset(edata, 0, sizeof(*edata));
     exec->data = edata;
@@ -56,7 +58,7 @@ static int _elf_phdr_check(exec_hand_t *exec) {
 static int _elf_prepare(exec_hand_t *exec) {
     exec_elf_data_t *edata = exec->data;
 
-    if(exec->entrypoint || exec->data_begin) {
+    if(exec->entrypoint || (exec->data_begin != 0xFFFFFFFF)) {
         /* Currently no relocation is supported. */
         printf("_elf_prepare: Explicit address given, ignoring (no relocation support)\n");
     }
@@ -128,6 +130,10 @@ static int _elf_load_phdr(exec_hand_t *exec) {
             /* @note Using paddr, as if the kernel is linked to higher memory,
              * we may attempt to load into non-existent memory. The kernel
              * should do the mapping itself after it is loaded. */
+            if(phdr->paddr < exec->data_begin) {
+                exec->data_begin = phdr->paddr;
+            }
+
             if(phdr->filesz) {
 #if (DEBUG_EXEC_ELF)
                 printf("  Loading  %6u bytes from file into %p.\n", phdr->filesz, phdr->paddr);
