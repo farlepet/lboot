@@ -81,12 +81,12 @@ bios_call:
     movb %al,   (_int_id)
 
     /* Load parameters */
-    movw  2(%di), %ax
-    movw  4(%di), %bx
-    movw  6(%di), %cx
-    movw  8(%di), %dx
-    movw 10(%di), %si
-    movw 12(%di), %di
+    movl  4(%di), %eax
+    movl  8(%di), %ebx
+    movl 12(%di), %ecx
+    movl 16(%di), %edx
+    movl 20(%di), %esi
+    movl 24(%di), %edi
     /* @note Not loading EFLAGS, not sure any interrupts use any of those bits as input */
 
     /* @note INT only accepts immediates, so we need to modify the code */
@@ -97,16 +97,16 @@ _int_id:
     /* Save results */
     pushw %bp
     movw  (_bios_call_ptr), %bp
-    movw  %ax,  2(%bp)
-    movw  %bx,  4(%bp)
-    movw  %cx,  6(%bp)
-    movw  %dx,  8(%bp)
-    movw  %si, 10(%bp)
-    movw  %di, 12(%bp)
+    movl  %eax,  4(%bp)
+    movl  %ebx,  8(%bp)
+    movl  %ecx, 12(%bp)
+    movl  %edx, 16(%bp)
+    movl  %esi, 20(%bp)
+    movl  %edi, 24(%bp)
     /* Save EFLAGS */
-    pushfw
-    popw   %ax
-    mov    %ax, 14(%bp)
+    pushfl
+    popl   %eax
+    movl   %eax, 28(%bp)
 
     popw %bp
 
