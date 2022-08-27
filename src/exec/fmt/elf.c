@@ -4,8 +4,6 @@
 #include "io/output.h"
 #include "mm/alloc.h"
 
-#define DEBUG_EXEC_ELF (0)
-
 typedef struct exec_elf_data_struct {
     elf_header_t *ehdr; /**< Buffer containing ELF file header */
     elf32_phdr_t *phdr; /**< Buffer containing ELF program headers */

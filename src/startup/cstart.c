@@ -11,8 +11,6 @@
 #include "storage/fs/fs.h"
 #include "storage/fs/fat.h"
 
-#define USE_SERIAL (0)
-
 static void _init_data(void) {
     /* Clear BSS */
     extern int __lboot_bss_begin, __lboot_bss_end;
@@ -57,8 +55,6 @@ void cstart(void) {
     if(fs_fat_init(&_bootfs, &_bootdev, 0x00)) {
         panic("Failed initializing filesystem!\n");
     }
-
-    printf("Boot filesystem size: %u KiB\n", (_bootfs.fs_size / 1024));
 
     printf("Loading config `%s`\n", _config_file);
     if(config_load(&_cfg, &_bootfs, _config_file)) {

@@ -9,8 +9,6 @@
 #include "exec/fmt/elf.h"
 #include "exec/fmt/flat.h"
 
-#define DEBUG_EXEC (0)
-
 int exec_open(exec_hand_t *exec, fs_file_t *file) {
     memset(exec, 0, sizeof(*exec));
 

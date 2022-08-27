@@ -8,8 +8,6 @@
  * this statically declared should be fine. */
 static storage_bios_data_t _bios_data = { 0 };
 
-#define STORAGE_BIOS_DEBUG (0)
-
 static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t size);
 
 int storage_bios_init(storage_hand_t *storage, uint8_t bios_dev) {
@@ -62,14 +60,14 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
     uint8_t  head   = track % bdata->n_heads;
              track  = track / bdata->n_heads;
 
-#if (STORAGE_BIOS_DEBUG)
+#if (DEBUG_STORAGE_BIOS)
     printf(" [%02hu,%02hhu,%02hhu]", track, head, sector);
 #endif
 
     int attempts = 4;
 
     while(--attempts) {
-#if (STORAGE_BIOS_DEBUG)
+#if (DEBUG_STORAGE_BIOS)
         printf(" TRY");
 #endif
         call.int_n = 0x13;
@@ -98,7 +96,7 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
 }
 
 static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t size) {
-#if (STORAGE_BIOS_DEBUG)
+#if (DEBUG_STORAGE_BIOS)
     printf("_bios_read(..., %p, %5d, %4d)", buff, offset, size);
 #endif
 
@@ -118,7 +116,7 @@ static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t s
         /* Floppy */
         while (pos < size) {
             if(_floppy_read_sector(bdata, buff + pos, offset + pos)) {
-#if (STORAGE_BIOS_DEBUG)
+#if (DEBUG_STORAGE_BIOS)
                 printf(" FAIL\n");
 #endif
                 return -1;
@@ -130,8 +128,8 @@ static ssize_t _read(storage_hand_t *storage, void *buff, off_t offset, size_t s
         return -1;
     }
 
-#if (STORAGE_BIOS_DEBUG)
-#  if (STORAGE_BIOS_DEBUG > 1)
+#if (DEBUG_STORAGE_BIOS)
+#  if (DEBUG_STORAGE_BIOS > 1)
     uint16_t chksum = 0;
     uint8_t *data   = buff;
     for(size_t i = 0; i < size; i++) {

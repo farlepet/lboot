@@ -5,8 +5,6 @@
 #include "mm/alloc.h"
 #include "storage/fs/fat.h"
 
-#define FS_FAT_DEBUG (0)
-
 typedef struct {
     off_t first_cluster; /**< Offset into filesystem to first data cluster, in bytes */
 } fat_file_data_t;
@@ -219,7 +217,7 @@ static off_t _fat_get_next_cluster(fs_hand_t *fs, void *tmp, off_t curr_clust) {
 }
 
 static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t sz, off_t off) {
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
     printf("_fat_read(..., %p, %d, %d)\n", buf, sz, off);
 #endif
 
@@ -237,7 +235,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
     while(off >= fdata->cluster_size) {
         cluster = _fat_get_next_cluster(fs, tmp, cluster);
         if(!cluster) {
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
             printf("ERROR: Unexpected end of file!\n");
 #endif
             free(tmp);
@@ -251,7 +249,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
     while(pos < sz) {
         if(fs->storage->read(fs->storage, tmp, cluster, fdata->cluster_size) != fdata->cluster_size) {
             free(tmp);
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
             printf("ERROR: Could not read from FS!\n");
 #endif
             return -1;
@@ -264,7 +262,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
 
             cluster = _fat_get_next_cluster(fs, tmp, cluster);
             if(!cluster) {
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
                 printf("ERROR: Unexpected end of file!\n");
 #endif
                 free(tmp);
@@ -327,7 +325,7 @@ static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *de
 }
 
 static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *name) {
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
     printf("_fat_find %s\n", name);
 #endif
 
@@ -360,7 +358,7 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
         }
 
         for(unsigned i = 0; i < (dir->size / sizeof(fat_dirent_t)); i++) {
-#if (FS_FAT_DEBUG)
+#if (DEBUG_FS_FAT)
             if(dirents[i].filename[0]) {
                 printf("  %3u: %s\n", (i + (pos / sizeof(fat_dirent_t))), dirents[i].filename);
             }

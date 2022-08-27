@@ -7,8 +7,6 @@
 #include "mm/alloc.h"
 #include "storage/fs/fs.h"
 
-#define DEBUG_CONFIG (1)
-
 static int _config_parse(config_data_t *cfg, char *cfgdata);
 
 #if (DEBUG_CONFIG)

@@ -136,9 +136,9 @@ static int _mboot2_poptag_meminfo(multiboot2_tag_t *tag) {
         bmem->size_upper = call.ax;
     }
 
-    /* @todo Check for 15MiB memory hole, and check other BIOS function availability. */
-
+#if (DEBUG_EXEC_MULTIBOOT)
     printf("  TAG  4: lower: %u, upper: %u\n", bmem->size_lower, bmem->size_upper);
+#endif
 
     return 0;
 }
@@ -199,7 +199,9 @@ static int _mboot2_poptag_mmap(multiboot2_tag_t *tag) {
                                              break;
         }
         
+#if (DEBUG_EXEC_MULTIBOOT)
         printf("  TAG  6: %16llx, %16llx, %d\n", mmap->entries[idx].base_addr, mmap->entries[idx].length, mmap->entries[idx].type);
+#endif
 
         idx++;
         mmap->size += sizeof(multiboot2_mmap_entry_t);

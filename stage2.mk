@@ -11,7 +11,8 @@ S2_LDFLAGS = -T stage2.ld -melf_i386
 S2_CFLAGS  = -m32 -march=i386 -fno-pic \
 			 -I $(S2_INCDIR) \
 			 -nostdlib -nostdinc -ffreestanding -Wall -Wextra -Werror -Os \
-			 -g -fno-stack-protector -fdata-sections -ffunction-sections
+			 -g -fno-stack-protector -fdata-sections -ffunction-sections \
+			 -include "inc/config.h"
 S2_ASFLAGS = $(S2_CFLAGS)
 
 
