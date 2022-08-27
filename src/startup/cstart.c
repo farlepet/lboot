@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "config/config.h"
 #include "mm/alloc.h"
 #include "exec/exec.h"
 #include "io/output.h"
@@ -26,8 +27,8 @@ static storage_hand_t _bootdev;
 static fs_hand_t      _bootfs;
 static exec_hand_t    _exec;
 
-/* Eventually, this will be loaded from the config. */
-#define KERNEL_PATH "STAGE2.ELF"
+static const char   *_config_file = "LBOOT.CFG";
+static config_data_t _cfg;
 
 void cstart(void) {
     _init_data();
@@ -58,16 +59,21 @@ void cstart(void) {
     }
 
     printf("Boot filesystem size: %u KiB\n", (_bootfs.fs_size / 1024));
-    
-    const char *kernel_path = KERNEL_PATH;
 
-    printf("Loading kernel `%s`\n", kernel_path);
+    printf("Loading config `%s`\n", _config_file);
+    if(config_load(&_cfg, &_bootfs, _config_file)) {
+        panic("Failed loading config!\n");
+    }
+
+    if(_cfg.kernel_path == NULL) {
+        panic("Kernel not specified in config!\n");
+    }
+    printf("Loading kernel `%s`\n", _cfg.kernel_path);
 
     fs_file_t kernel;
-    if(_bootfs.find(&_bootfs, NULL, &kernel, kernel_path)) {
+    if(_bootfs.find(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {
         panic("Failed to find kernel!\n");
     }
-    printf("Kernel file size: %d B\n", kernel.size);
 
     if(exec_open(&_exec, &kernel)) {
         panic("Failed to open kernel for execution!\n");

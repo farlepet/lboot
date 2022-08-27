@@ -29,8 +29,7 @@ $(FLOPPY): $(STAGE1) $(STAGE2) $(SECTOR_MAPPER)
 	$(Q) $(SECTOR_MAPPER) 1 $@.tmp STAGE2.BIN $(STAGE2_MAP)
 	$(Q) mcopy -i $@.tmp $(STAGE2_MAP) ::/STAGE2.MAP
 	$(Q) $(SECTOR_MAPPER) 2 $@.tmp STAGE2.MAP
-# For testing purposes:
-	$(Q) mcopy -i $@.tmp $(STAGE2).elf ::/STAGE2.ELF
+	$(Q) mcopy -i $@.tmp lboot.cfg ::/LBOOT.CFG
 # Only update the target if the previous commands succeed
 	$(Q) mv $@.tmp $@
 
