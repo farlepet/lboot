@@ -1,7 +1,8 @@
 LBoot
 =====
 
-x86 bootloader for floppy disks
+x86 bootloader for floppy disks. For a working example of LBoot being used, see
+[Lambda OS](https://github.com/farlepet/lambda-os).
 
 Current Support
 ---------------
@@ -47,7 +48,7 @@ be provided.
 
 Testing
 -------
-This has been tested both within QEMU, and on a Compaq Armada 1700, booting the
+LBoot has been tested both within QEMU, and on a Compaq Armada 1700, booting the
 [Lambda Kernel](https://github.com/farlepet/lambda-kern)
 
 Config
