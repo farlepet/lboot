@@ -4,6 +4,8 @@ LBoot
 x86 bootloader for floppy disks. For a working example of LBoot being used, see
 [Lambda OS](https://github.com/farlepet/lambda-os).
 
+![Screenshot of LBoot boot loading kernel](docs/lboot.jpg)
+
 Current Support
 ---------------
 
@@ -20,6 +22,11 @@ Current Support
  - Outputs
    - VGA
    - Serial
+
+Features can be toggled via `inc/config.h`. Stage 2 size based on features:
+ - All features disabled:      ~13 KiB
+ - With all features:          ~14 KiB
+ - With all debugging enabled: ~15 KiB
 
 Future Work
 -----------
@@ -48,11 +55,13 @@ be provided.
 
 Testing
 -------
+
 LBoot has been tested both within QEMU, and on a Compaq Armada 1700, booting the
 [Lambda Kernel](https://github.com/farlepet/lambda-kern)
 
 Config
 ------
+
 LBoot is configured using a text file (currently must be named LBOOT.CFG in the
 root of the boot filesystem). The syntax is simple, but somewhat strict. Each
 configuration line is a key-value pair separated by a `=`. There must be no
