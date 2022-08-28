@@ -10,6 +10,7 @@ typedef struct config_data_module_struct {
     char     *module_path; /**< Path to module file. */
     char     *module_name; /**< Name of module passed to kernel, may point to module_path. */
     uintptr_t module_addr; /**< Physical address to which module is loaded. Will be set when the module is actually loaded. */
+    size_t    module_size; /**< Size of the module in memory. Will be set when the module is actually loaded. */
 } config_data_module_t;
 
 /**

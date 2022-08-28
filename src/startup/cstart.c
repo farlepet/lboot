@@ -75,7 +75,7 @@ void cstart(void) {
         panic("Failed to open kernel for execution!\n");
     }
 
-    if(exec_exec(&_exec)) {
+    if(exec_exec(&_exec, &_cfg)) {
         panic("Failed to load and execute kernel!\n");
     }
 

@@ -131,6 +131,9 @@ static int _elf_load_phdr(exec_hand_t *exec) {
             if(phdr->paddr < exec->data_begin) {
                 exec->data_begin = phdr->paddr;
             }
+            if((phdr->paddr + phdr->memsz) > exec->data_end) {
+                exec->data_end = phdr->paddr + phdr->memsz;
+            }
 
             if(phdr->filesz) {
 #if (DEBUG_EXEC_ELF)

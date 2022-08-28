@@ -50,6 +50,41 @@ int exec_open(exec_hand_t *exec, fs_file_t *file) {
     return 0;
 }
 
+/* @todo Move this elsewhere, as it could be useful. */
+#define ALIGN(P, A) (((P) % (A)) ? (P) : ((P) + ((A) - ((P) % (A)))))
+
+static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
+    uintptr_t addr = exec->data_end;
+
+    fs_hand_t *fs = exec->file->fs;
+
+    fs_file_t modfile;
+
+    for(unsigned i = 0; i < cfg->module_count; i++) {
+        addr = ALIGN(addr, 8);
+
+        print_status("Loading module `%s` (%s)", cfg->modules[i].module_name, cfg->modules[i].module_name);
+
+        if(fs->find(fs, NULL, &modfile, cfg->modules[i].module_path)) {
+            printf("_exec_load_modules: Could not find file\n");
+            return -1;
+        }
+
+        if(fs->read(fs, &modfile, (void *)addr, modfile.size, 0) != (ssize_t)modfile.size) {
+            printf("_exec_load_modules: Could not read from file\n");
+            return -1;
+        }
+
+        cfg->modules[i].module_addr = addr;
+        cfg->modules[i].module_size = modfile.size;
+
+        fs->file_destroy(fs, &modfile);
+
+        addr += cfg->modules[i].module_size;
+    }
+    return 0;
+}
+
 static int _exec_detect_multiboot(exec_hand_t *exec) {
     /* Assuming data_begin is 8-byte aligned. */
     uint32_t *search = (uint32_t *)exec->data_begin;
@@ -85,11 +120,16 @@ static void _exec_enter(uintptr_t entrypoint) {
                  "m"(entrypoint));
 }
 
-int exec_exec(exec_hand_t *exec) {
+
+int exec_exec(exec_hand_t *exec, config_data_t *cfg) {
     if(exec->prepare(exec)) {
         return -1;
     }
     if(exec->load(exec)) {
+        return -1;
+    }
+
+    if(_exec_load_modules(exec, cfg)) {
         return -1;
     }
 
@@ -101,7 +141,7 @@ int exec_exec(exec_hand_t *exec) {
 #if (DEBUG_EXEC)
         printf("Multiboot 2 header found at %p\n", exec->multiboot);
 #endif
-        multiboot2_t *mboot2 = multiboot2_parse(exec->multiboot);
+        multiboot2_t *mboot2 = multiboot2_parse(exec->multiboot, cfg);
         if(mboot2 == NULL) {
             return -1;
         }

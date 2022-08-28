@@ -3,8 +3,9 @@
 
 #include <stdint.h>
 
-#include "storage/fs/fs.h"
+#include "config/config_types.h"
 #include "exec/multiboot_types.h"
+#include "storage/fs/fs.h"
 
 #define EXEC_FIRSTCHUNK_SZ (512) /**< Size of first chunk to read when determining file type. */
 
@@ -27,6 +28,7 @@ struct exec_hand_struct {
     void              *data;       /**< Data for use by particular exec handler. */
 
     uintptr_t          data_begin; /**< First address of data loaded from file. */
+    uintptr_t          data_end;   /**< Last address + 1 of data loaded from file. */
     uintptr_t          entrypoint; /**< Address of executable entrypoint. (phys == virt) */
 
     multiboot2_head_t *multiboot;  /**< Location of multiboot header, if applicable */
@@ -68,9 +70,10 @@ int exec_open(exec_hand_t *exec, fs_file_t *file);
  * @brief Execute loaded binary.
  *
  * @param exec Exec handle
+ * @param cfg Configuration
  * @return no-return on success, < 0 on failure.
  */
-int exec_exec(exec_hand_t *exec);
+int exec_exec(exec_hand_t *exec, config_data_t *cfg);
 
 #endif
 

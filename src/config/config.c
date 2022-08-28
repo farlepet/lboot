@@ -83,6 +83,7 @@ static int _config_parse(config_data_t *cfg, char *cfgdata) {
     /* @todo Dynamically allocate based on number of MODULE lines. */
 #define MAX_MODULES 4
     cfg->modules = alloc(sizeof(*cfg->modules) * MAX_MODULES, 0);
+    memset(cfg->modules, 0, sizeof(*cfg->modules) * MAX_MODULES);
 
     while(line) {
         _get_line(line, &next);

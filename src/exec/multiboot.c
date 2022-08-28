@@ -14,10 +14,11 @@ const char *_bootloader_name = "LBoot";
                                          (T)->size + \
                                          (((T)->size % 8) ? (8 - ((T)->size % 8)) : 0))
 
+static int _mboot2_poptag_module(multiboot2_tag_t *tag, const config_data_module_t *mod);
 static int _mboot2_poptag_meminfo(multiboot2_tag_t *tag);
 static int _mboot2_poptag_mmap(multiboot2_tag_t *tag);
 
-multiboot2_t *multiboot2_parse(const multiboot2_head_t *head) {
+multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_t *cfg) {
     if((head->magic        != MULTIBOOT2_HEAD_MAGIC) ||
        (head->architecture != MULTIBOOT2_HEAD_ARCHITECTURE_X86)) {
         return NULL;
@@ -29,15 +30,13 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head) {
         return NULL;
     }
 
-    multiboot2_t *mboot2 = alloc(MULTIBOOT2_PREALLOC, 0);
+    multiboot2_t *mboot2 = alloc(MULTIBOOT2_PREALLOC, ALLOC_FLAG_ALIGN(3));
     memset(mboot2, 0, MULTIBOOT2_PREALLOC);
-    mboot2->size = sizeof(multiboot2_t);
 
     multiboot2_tag_t *next_tag = (multiboot2_tag_t *)&mboot2->tags;
 
     const multiboot2_tag_t *htag = (multiboot2_tag_t *)&head->tags;
     while(htag < (multiboot2_tag_t *)(head + head->header_length)) {
-        printf("tag: %d\n", htag->type);
         if(htag->type == MULTIBOOT2_HEADERTAG_END) {
             break;
         }
@@ -48,7 +47,12 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head) {
                 for(unsigned i = 0; i < (htag->size - 8) / 4; i++) {
                     switch(reqs[i]) {
                         case MULTIBOOT2_TAGTYPE_CMDLINE:
-                            /* @todo Cmdline support*/
+                            if(cfg->kernel_cmdline) {
+                                next_tag->type = MULTIBOOT2_TAGTYPE_CMDLINE;
+                                next_tag->size = sizeof(multiboot2_tag_t) + strlen(cfg->kernel_cmdline) + 1;
+                                strcpy((char *)&next_tag->data, cfg->kernel_cmdline);
+                                next_tag = NEXT_TAG(next_tag);
+                            }
                             break;
                         case MULTIBOOT2_TAGTYPE_BOOTLOADER_NAME:
                             next_tag->type = MULTIBOOT2_TAGTYPE_BOOTLOADER_NAME;
@@ -57,7 +61,12 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head) {
                             next_tag = NEXT_TAG(next_tag);
                             break;
                         case MULTIBOOT2_TAGTYPE_MODULE:
-                            /* @todo Module support */
+                            for(unsigned i = 0; i < cfg->module_count; i++) {
+                                if(_mboot2_poptag_module(next_tag, &cfg->modules[i])) {
+                                    goto mboot2_parse_error;
+                                }
+                                next_tag = NEXT_TAG(next_tag);
+                            }
                             break;
                         case MULTIBOOT2_TAGTYPE_BASIC_MEMINFO:
                             if(_mboot2_poptag_meminfo(next_tag)) {
@@ -94,12 +103,32 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head) {
         htag = NEXT_TAG(htag);
     }
 
+    mboot2->size = (uint32_t)(next_tag - (multiboot2_tag_t *)mboot2);
+
     return mboot2;
 
 mboot2_parse_error:
     free(mboot2);
 
     return NULL;
+}
+
+static int _mboot2_poptag_module(multiboot2_tag_t *tag, const config_data_module_t *mod) {
+    multiboot2_tag_module_t *tmod = (multiboot2_tag_module_t *)tag;
+
+    tmod->type      = MULTIBOOT2_TAGTYPE_MODULE;
+    tmod->size      = sizeof(multiboot2_tag_module_t) +
+                             strlen(mod->module_name) + 1;
+    tmod->mod_start = mod->module_addr;
+    tmod->mod_end   = mod->module_addr + mod->module_size;
+
+    strcpy(tmod->name, mod->module_name);
+
+#if (DEBUG_EXEC_MULTIBOOT)
+    printf("%p  TAG  3: %s: %p-%p\n", tag, tmod->name, tmod->mod_start, tmod->mod_end);
+#endif
+
+    return 0;
 }
 
 static int _mboot2_poptag_meminfo(multiboot2_tag_t *tag) {
@@ -137,7 +166,7 @@ static int _mboot2_poptag_meminfo(multiboot2_tag_t *tag) {
     }
 
 #if (DEBUG_EXEC_MULTIBOOT)
-    printf("  TAG  4: lower: %u, upper: %u\n", bmem->size_lower, bmem->size_upper);
+    printf("%p  TAG  4: lower: %u, upper: %u\n", tag, bmem->size_lower, bmem->size_upper);
 #endif
 
     return 0;
@@ -200,7 +229,7 @@ static int _mboot2_poptag_mmap(multiboot2_tag_t *tag) {
         }
         
 #if (DEBUG_EXEC_MULTIBOOT)
-        printf("  TAG  6: %16llx, %16llx, %d\n", mmap->entries[idx].base_addr, mmap->entries[idx].length, mmap->entries[idx].type);
+        printf("%p  TAG  6: %16llx, %16llx, %d\n", tag, mmap->entries[idx].base_addr, mmap->entries[idx].length, mmap->entries[idx].type);
 #endif
 
         idx++;
@@ -213,3 +242,4 @@ static int _mboot2_poptag_mmap(multiboot2_tag_t *tag) {
 
     return 0;
 }
+
