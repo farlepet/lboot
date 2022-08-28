@@ -112,7 +112,7 @@ static void _vga_status(output_hand_t *out, const char *str) {
 static void _vga_working(output_hand_t *out, working_status_e status) {
     (void)out;
 
-    const char      spinner[]   = { '|', '/', '-', '\\', '-' };
+    const char      spinner[]   = { '|', '/', '-', '\\' };
     static unsigned spinner_pos = 0;
 
     if(spinner_pos >= sizeof(spinner)) {
