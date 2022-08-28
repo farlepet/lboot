@@ -398,9 +398,10 @@ int printf(const char *fmt, ...) {
 
     int ret = _print(_printf_buff, fmt, varg);
 
+    __builtin_va_end(varg);
+
     puts(_printf_buff);
 
-    __builtin_va_end(varg);
     return ret;
 }
 
@@ -413,6 +414,8 @@ void _panic(const char *fmt, ...) {
     puts(_printf_buff);
 
     __builtin_va_end(varg);
+
+    status_working(WORKING_STATUS_ERROR);
 
     /* @todo Stack trace */
     for(;;) {
@@ -432,4 +435,40 @@ void print_hex(const void *data, size_t len) {
         printf("\n");
     }
 }
+
+void print_status(const char *fmt, ...) {
+    __builtin_va_list varg;
+    __builtin_va_start(varg, fmt);
+
+    _print(_printf_buff, fmt, varg);
+
+    __builtin_va_end(varg);
+
+#if (FEATURE_STATUSBAR)
+    if(_current_output && _current_output->status) {
+        _current_output->status(_current_output, _printf_buff);
+    } else {
+#endif
+        puts(_printf_buff);
+        putchar('\n');
+#if (FEATURE_STATUSBAR)
+    }
+#endif
+}
+
+#if (FEATURE_WORKINGSTATUS)
+void status_working(working_status_e status) {
+#  if (FEATURE_STATUSBAR)
+    if(_current_output && _current_output->working) {
+        _current_output->working(_current_output, status);
+    } else {
+#  endif
+        if(status == WORKING_STATUS_WORKING) {
+            putchar('.');
+        }
+#  if (FEATURE_STATUSBAR)
+    }
+#  endif
+}
+#endif
 

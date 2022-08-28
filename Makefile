@@ -43,6 +43,10 @@ $(SECTOR_MAPPER):
 emu: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot
 
+emu-slow: $(FLOPPY)
+	$(Q) qemu-system-i386 -drive file=$(FLOPPY),if=floppy,format=raw,bps=4000 \
+		                  -serial stdio -machine pc -no-reboot
+
 emu-dbg: $(FLOPPY)
 	$(Q) qemu-system-i386 -fda $(FLOPPY) -serial stdio -machine pc -no-reboot -S -s
 

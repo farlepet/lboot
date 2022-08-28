@@ -87,6 +87,8 @@ static int _floppy_read_sector(storage_bios_data_t *bdata, void *buff, off_t off
         _floppy_reset(bdata->bios_id);
     }
 
+    status_working(WORKING_STATUS_WORKING);
+
     if(attempts == 0) {
         /* Failed to read sector */
         return -1;

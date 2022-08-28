@@ -56,7 +56,7 @@ void cstart(void) {
         panic("Failed initializing filesystem!\n");
     }
 
-    printf("Loading config `%s`\n", _config_file);
+    print_status("Loading config `%s`", _config_file);
     if(config_load(&_cfg, &_bootfs, _config_file)) {
         panic("Failed loading config!\n");
     }
@@ -64,7 +64,7 @@ void cstart(void) {
     if(_cfg.kernel_path == NULL) {
         panic("Kernel not specified in config!\n");
     }
-    printf("Loading kernel `%s`\n", _cfg.kernel_path);
+    print_status("Loading kernel `%s`", _cfg.kernel_path);
 
     fs_file_t kernel;
     if(_bootfs.find(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {

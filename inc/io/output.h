@@ -3,7 +3,13 @@
 
 #include <stdint.h>
 
-#define VERBOSE_PANIC (1)
+#if (FEATURE_WORKINGSTATUS)
+typedef enum working_status_e {
+    WORKING_STATUS_NOTWORKING = 0, /**< Not actively working */
+    WORKING_STATUS_WORKING,        /**< Actively working */
+    WORKING_STATUS_ERROR           /**< Error occured */
+} working_status_e;
+#endif
 
 typedef struct output_hand_struct output_hand_t;
 
@@ -24,6 +30,26 @@ struct output_hand_struct {
      * @param ch Character
      */
     void (*putchar)(output_hand_t *out, char ch);
+
+#if (FEATURE_STATUSBAR)
+    /**
+     * @brief Update status bar message
+     *
+     * @param out Output handle
+     * @param str Status string
+     */
+    void (*status)(output_hand_t *out, const char *str);
+
+#  if (FEATURE_WORKINGSTATUS)
+    /**
+     * @brief Update status bar working icon
+     *
+     * @parma out Output handle
+     * @param status Working status
+     */
+    void (*working)(output_hand_t *out, working_status_e status);
+#  endif
+#endif
 };
 
 /**
@@ -63,7 +89,7 @@ int printf(const char *fmt, ...);
  */
 void _panic(const char *fmt, ...);
 
-#if (VERBOSE_PANIC)
+#if (FEATURE_VERBOSE_PANIC)
 #  define __panic_stringify1(X) #X
 #  define __panic_stringify2(X) __panic_stringify1(X)
 
@@ -79,6 +105,27 @@ void _panic(const char *fmt, ...);
  * @param len Length of data in bytes
  */
 void print_hex(const void *data, size_t len);
+
+/**
+ * @brief Print a status message
+ *
+ * If FEATURE_STATUSBAR is enabled, this will update the statusbar message.
+ * Otherwise, this will behave the same as printf() with a newline appended.
+ *
+ * @param fmt Format string
+ */
+void print_status(const char *fmt, ...);
+
+#if (FEATURE_WORKINGSTATUS)
+/**
+ * @brief Update status showing that work is in progress
+ *
+ * @param status Current working status
+ */
+void status_working(working_status_e status);
+#else
+#  define status_working(...)
+#endif
 
 #endif
 
