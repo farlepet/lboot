@@ -51,6 +51,9 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_
                                 next_tag->type = MULTIBOOT2_TAGTYPE_CMDLINE;
                                 next_tag->size = sizeof(multiboot2_tag_t) + strlen(cfg->kernel_cmdline) + 1;
                                 strcpy((char *)&next_tag->data, cfg->kernel_cmdline);
+#if (DEBUG_EXEC_MULTIBOOT)
+                                printf("%p  TAG  1: %s\n", next_tag, (char *)next_tag->data);
+#endif
                                 next_tag = NEXT_TAG(next_tag);
                             }
                             break;
@@ -58,6 +61,9 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_
                             next_tag->type = MULTIBOOT2_TAGTYPE_BOOTLOADER_NAME;
                             next_tag->size = sizeof(multiboot2_tag_t) + strlen(_bootloader_name) + 1;
                             strcpy((char *)&next_tag->data, _bootloader_name);
+#if (DEBUG_EXEC_MULTIBOOT)
+                                printf("%p  TAG  2: %s\n", next_tag, (char *)next_tag->data);
+#endif
                             next_tag = NEXT_TAG(next_tag);
                             break;
                         case MULTIBOOT2_TAGTYPE_MODULE:
@@ -103,7 +109,7 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_
         htag = NEXT_TAG(htag);
     }
 
-    mboot2->size = (uint32_t)(next_tag - (multiboot2_tag_t *)mboot2);
+    mboot2->size = (uint32_t)((void *)next_tag - (void *)mboot2);
 
     return mboot2;
 
