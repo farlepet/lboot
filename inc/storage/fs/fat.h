@@ -76,6 +76,14 @@ typedef struct {
 typedef struct {
     char     filename[11];   /**< Short file name */
     uint8_t  attr;          /**< Attributes */
+#define FAT_DIRENT_ATTR_READONLY    (1U << 0) /**< File is readonly */
+#define FAT_DIRENT_ATTR_HIDDEN      (1U << 1) /**< File is hidden */
+#define FAT_DIRENT_ATTR_SYSTEM      (1U << 2) /**< File is used by the system */
+#define FAT_DIRENT_ATTR_VOLUMELABEL (1U << 3) /**< Entry represents the volume label */
+#define FAT_DIRENT_ATTR_DIRECTORY   (1U << 4) /**< Entry represents a directory */
+#define FAT_DIRENT_ATTR_ARCHIVE     (1U << 5) /**< File is dirty */
+#define FAT_DIRENT_ATTR_DEVICE      (1U << 6) /**< Entry represents a device */
+#define FAT_DIRENT_ATTR_RESERVED    (1U << 7) /**< Entry is reserved */
     uint8_t  _reserved[10]; /**< Reserved: Used for VFAT, not yet supported */
     uint16_t time;          /**< Modification time, in FAT time format */
     uint16_t date;          /**< Modification date, in FAT date format */

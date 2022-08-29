@@ -23,12 +23,7 @@ include stage2.mk
 $(FLOPPY): $(STAGE1) $(STAGE2) $(SECTOR_MAPPER)
 	$(Q) rm -f $@.tmp
 	$(Q) mkdosfs $(MKDOSFS_FLAGS) -C $@.tmp 1440
-	$(Q) dd if=$(STAGE1) of=$@.tmp conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes count=11
-	$(Q) dd if=$(STAGE1) of=$@.tmp conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes skip=90 seek=90
-	$(Q) mcopy -i $@.tmp $(STAGE2) ::/STAGE2.BIN
-	$(Q) $(SECTOR_MAPPER) 1 $@.tmp STAGE2.BIN $(STAGE2_MAP)
-	$(Q) mcopy -i $@.tmp $(STAGE2_MAP) ::/STAGE2.MAP
-	$(Q) $(SECTOR_MAPPER) 2 $@.tmp STAGE2.MAP
+	$(Q) tools/lboot_prepare.sh $@.tmp
 # Only update the target if the previous commands succeed
 	$(Q) mv $@.tmp $@
 

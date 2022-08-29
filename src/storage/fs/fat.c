@@ -63,11 +63,12 @@ int fs_fat_init(fs_hand_t *fs, storage_hand_t *storage, off_t off) {
     fdata->fat_offset    = bootsec->reserved_sectors    * fdata->sector_size;
     fdata->fat_size      = bootsec->sectors_per_fat     * fdata->sector_size;
 
-    fdata->rootdir.size                = bootsec->root_dir_entries * sizeof(fat_dirent_t);
+    fdata->rootdir.size                = 0;
     fdata->_rootdir_data.first_cluster = fdata->fat_offset + (fdata->fat_size * bootsec->fat_copies);
     fdata->rootdir.data                = &fdata->_rootdir_data;
+    fdata->rootdir.attr                = FS_FILEATTR_DIRECTORY;
 
-    fdata->data_offset = fdata->_rootdir_data.first_cluster + fdata->rootdir.size;
+    fdata->data_offset = fdata->_rootdir_data.first_cluster + (bootsec->root_dir_entries * sizeof(fat_dirent_t));
 
     /* @note Currently only supporting FAT12 */
     fs->fs_size = bootsec->total_sectors * fdata->sector_size;
@@ -213,6 +214,10 @@ static off_t _fat_get_next_cluster(fs_hand_t *fs, void *tmp, off_t curr_clust) {
         next_clust = fdata->data_offset + ((fat_entry - 2) * fdata->cluster_size);
     }
 
+#if (DEBUG_FS_FAT > 1)
+    printf("_fat_get_next_cluster: %3u (%5d) -> %3u (%5d)\n", clust_num, curr_clust, fat_entry, next_clust);
+#endif
+
     return next_clust;
 }
 
@@ -221,7 +226,8 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
     printf("_fat_read(..., %p, %d, %d)\n", buf, sz, off);
 #endif
 
-    if((off + sz) > file->size) {
+    if(!(file->attr & FS_FILEATTR_DIRECTORY) &&
+       (off + sz) > file->size) {
         panic("Attempt to read past end of file!");
     }
 
@@ -236,7 +242,9 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
         cluster = _fat_get_next_cluster(fs, tmp, cluster);
         if(!cluster) {
 #if (DEBUG_FS_FAT)
-            printf("ERROR: Unexpected end of file!\n");
+            if(!(file->attr & FS_FILEATTR_DIRECTORY)) {
+                printf("ERROR: Unexpected end of file!\n");
+            }
 #endif
             free(tmp);
             return -1;
@@ -263,7 +271,9 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
             cluster = _fat_get_next_cluster(fs, tmp, cluster);
             if(!cluster) {
 #if (DEBUG_FS_FAT)
-                printf("ERROR: Unexpected end of file!\n");
+                if(!(file->attr & FS_FILEATTR_DIRECTORY)) {
+                    printf("ERROR: Unexpected end of file!\n");
+                }
 #endif
                 free(tmp);
                 return -1;
@@ -303,7 +313,7 @@ static int _fat_strcmp(const char *fat_name, const char *filename) {
         filename++;
         fidx++;
     }
-    while(fidx <= 11) {
+    while(fidx < 11) {
         if(fat_name[fidx] != ' ') {
             /* Trailing character */
             return -1;
@@ -319,9 +329,20 @@ static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *de
     fat_file_data_t *filedata = (fat_file_data_t *)alloc(sizeof(fat_file_data_t), 0);
     filedata->first_cluster = fdata->data_offset + ((dent->start_cluster - 2) * fdata->cluster_size);
 
+    memset(file, 0, sizeof(*file));
     file->fs   = fs;
     file->data = filedata;
     file->size = dent->filesize;
+
+    if(dent->attr & FAT_DIRENT_ATTR_DIRECTORY) {
+        file->attr |= FS_FILEATTR_DIRECTORY;
+    } else {
+        file->attr |= FS_FILEATTR_FILE;
+    }
+
+#if (DEBUG_FS_FAT)
+    printf("_fat_pop_file: %u (%d), %u, %2x\n", dent->start_cluster, filedata->first_cluster, file->size, file->attr);
+#endif
 }
 
 static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *name) {
@@ -350,20 +371,23 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
     fat_dirent_t *dirents = (fat_dirent_t *)alloc(fdata->cluster_size, 0);
 
     off_t pos = 0;
-    while((size_t)pos < dir->size) {
+    while(1) {
         /* Read one cluster at a time. */
         if(_fat_read(fs, dir, dirents, fdata->cluster_size, pos) != fdata->cluster_size) {
-            free(dirents);
-            return -1;
+            /* Assume end of directory. */
+            break;
         }
 
-        for(unsigned i = 0; i < (dir->size / sizeof(fat_dirent_t)); i++) {
+        for(unsigned i = 0; i < (fdata->cluster_size / sizeof(fat_dirent_t)); i++) {
 #if (DEBUG_FS_FAT)
             if(dirents[i].filename[0]) {
-                printf("  %3u: %s\n", (i + (pos / sizeof(fat_dirent_t))), dirents[i].filename);
+                printf("  %3u: %11s\n", (i + (pos / sizeof(fat_dirent_t))), dirents[i].filename);
             }
 #endif
-            if(!_fat_strcmp(dirents[i].filename, name)) {
+            if(!_fat_strcmp(dirents[i].filename, name) &&
+               !(dirents[i].attr & (FAT_DIRENT_ATTR_VOLUMELABEL |
+                                    FAT_DIRENT_ATTR_DEVICE      |
+                                    FAT_DIRENT_ATTR_RESERVED))) {
                 _fat_pop_file(fs, file, &dirents[i]);
                 free(dirents);
                 return 0;

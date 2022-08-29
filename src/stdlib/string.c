@@ -1,6 +1,8 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "mm/alloc.h"
+
 size_t strlen(const char *str) {
 	size_t i = 0;
 	while(str[i]) { i++; }
@@ -53,6 +55,13 @@ char *strncpy(char *dest, const char *src, size_t n) {
 	}
 	
 	return dest;
+}
+
+char *strdup(const char *str) {
+    char *dup = alloc(strlen(str)+1, 0);
+    /* @note Failed alloc causes panic, so no need to check for NULL. */
+    strcpy(dup, str);
+    return dup;
 }
 
 void *memcpy(void *dest, const void *src, size_t n) {

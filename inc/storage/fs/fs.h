@@ -67,6 +67,8 @@ struct fs_file_struct {
 #define FS_FILEATTR_DIRECTORY (1UL << 1)
 };
 
+#define FS_PATHSEP '/' /**< Path separation character. */
+
 /**
  * @brief Recursively find a file within a directory
  *

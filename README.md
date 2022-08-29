@@ -10,7 +10,9 @@ Current Support
 ---------------
 
  - Filesystems
-   - FAT12 - Also limited to the boot device
+   - FAT12
+     - Limited to the boot device
+     - No long filename support
  - Kernel Format
    - ELF
  - Multiboot 2 (optional)
@@ -32,6 +34,7 @@ Future Work
 -----------
 
  - Loading kernel via XModem
+ - ACPI data via Multiboot 2
  - Flat binary support
  - Kernel relocation support (maybe)
  - Look into adding minimal FAT12 support to stage 1 loader
@@ -50,8 +53,14 @@ Requirements:
  - `mtools` for generating floppy image
 
 To build, simply run `make` in the main directory. This will generate a `boot.img`
-file containing the bootloader and configuration file. A kernel file will need to
-be provided.
+file containing the bootloader. A configuration and kernel file will need to be
+provided.
+
+To write the bootloader to an existing floppy disk or image, use the following from
+within the root of the repository:
+```
+tools/lboot_prepare.sh <floppy disk/image>
+```
 
 Testing
 -------
@@ -63,10 +72,10 @@ Config
 ------
 
 LBoot is configured using a text file (currently must be named LBOOT.CFG in the
-root of the boot filesystem). The syntax is simple, but somewhat strict. Each
-configuration line is a key-value pair separated by a `=`. There must be no
-spaces on either side of the `=`, and lines not containing a `=` are effectively
-comments.
+LBOOT directory of the boot filesystem). The syntax is simple, but somewhat
+strict. Each configuration line is a key-value pair separated by a `=`. There
+must be no spaces on either side of the `=`, and lines not containing a `=` are
+effectively comments.
 
 The following are the currently supported set of configuration keys:
  - `CFGVER`: Config version, must be 1

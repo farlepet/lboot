@@ -25,7 +25,7 @@ static storage_hand_t _bootdev;
 static fs_hand_t      _bootfs;
 static exec_hand_t    _exec;
 
-static const char   *_config_file = "LBOOT.CFG";
+static const char   *_config_file = "LBOOT/LBOOT.CFG";
 static config_data_t _cfg;
 
 void cstart(void) {
@@ -67,7 +67,7 @@ void cstart(void) {
     print_status("Loading kernel `%s`", _cfg.kernel_path);
 
     fs_file_t kernel;
-    if(_bootfs.find(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {
+    if(fs_findfile(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {
         panic("Failed to find kernel!\n");
     }
 

@@ -65,7 +65,7 @@ static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
 
         print_status("Loading module `%s` (%s)", cfg->modules[i].module_name, cfg->modules[i].module_name);
 
-        if(fs->find(fs, NULL, &modfile, cfg->modules[i].module_path)) {
+        if(fs_findfile(fs, NULL, &modfile, cfg->modules[i].module_path)) {
             printf("_exec_load_modules: Could not find file\n");
             return -1;
         }
