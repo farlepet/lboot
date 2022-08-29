@@ -96,7 +96,7 @@ int _round1(int argc, char **argv) {
 
     unsigned n_map_entries = 1;
     for(unsigned i = 1; i < n_clusters; i++) {
-        printf("%u: %08x -> %04lx\n", i, clusters[i], clusters[i] / fat.cluster_size);
+        //printf("%u: %08x -> %04lx\n", i, clusters[i], clusters[i] / fat.cluster_size);
         if(clusters[i] != (clusters[i-1] + fat.cluster_size)) {
             n_map_entries++;
         }
@@ -202,7 +202,7 @@ int _round2(int argc, char **argv) {
     off_t pre_addr = offsetof(fat_bootsector_t, stage2_map_sector);
     for(unsigned i = 0; i < n_clusters; i++) {
         uint16_t clust = (clusters[i] / fat.cluster_size) * fat.bootsector->sectors_per_cluster;
-        fprintf(stderr, "%08lx <- %04hx (%04x)\n", pre_addr, clust, clusters[i]);
+        //fprintf(stderr, "%08lx <- %04hx (%04x)\n", pre_addr, clust, clusters[i]);
         if(pwrite(fat.fd, &clust, 2, pre_addr) != 2) {
             fprintf(stderr, "Error while writing to image: %s\n", strerror(errno));
             free(clusters);

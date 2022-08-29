@@ -136,6 +136,8 @@ static off_t _get_next_cluster(fat_handle_t *hand, off_t cluster) {
 static void _populate_file_handle(fat_handle_t *hand, fat_file_handle_t *file, const fat_dirent_t *dirent) {
     file->first_cluster = hand->data_offset + ((dirent->start_cluster - 2) * hand->cluster_size);
     file->size          = dirent->filesize;
+    file->attr          = dirent->attr;
+    FAT_DEBUG("_populate_file_handle: %u -> %ld, %lu\n", dirent->start_cluster, file->first_cluster, file->size);
 }
 
 /**
@@ -162,7 +164,7 @@ static int _fat_strcmp(const char *fat_name, const char *filename) {
         filename++;
         fidx++;
     }
-    while(fidx <= 11) {
+    while(fidx < 11) {
         if(fat_name[fidx] != ' ') {
             /* Trailing character */
             return -1;
@@ -172,14 +174,53 @@ static int _fat_strcmp(const char *fat_name, const char *filename) {
     return 0;
 }
 
-int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_handle_t *fhand, const char *filename) {
+int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *_dir, fat_file_handle_t *fhand, const char *filename) {
+    if(*filename == '/') {
+        _dir = &hand->root_dir;
+        filename++;
+    }
+
+    /* We may need to modify dir, so set it to a local. */
+    fat_file_handle_t tdir;
+    memcpy(&tdir, _dir, sizeof(tdir));
+    fat_file_handle_t *dir = &tdir;
+
+    /* Recurse to the desired directory first */
+    {
+        char *sep = strchr(filename, '/');
+        while(sep) {
+            char *dirname = strndup(filename, sep - filename);
+            fat_file_handle_t tmp;
+            if(fat_find_file(hand, dir, &tmp, dirname)) {
+                FAT_ERROR("fat_find_file: Could not directory `%s`\n", dirname);
+                free(dirname);
+                return -1;
+            }
+
+            if(!(tmp.attr & FAT_DIRENT_ATTR_DIRECTORY)) {
+                FAT_ERROR("fat_find_file: `%s` is not a directory\n", dirname);
+                free(dirname);
+                return -1;
+            }
+
+            free(dirname);
+
+            memcpy(dir, &tmp, sizeof(*dir));
+
+            filename = sep+1;
+            sep = strchr(filename, '/');
+        }
+    }
+
+    FAT_DEBUG("fat_find_file: `%s`\n", filename);
+
+    off_t  dent_off = dir->first_cluster;
+    size_t curr_pos = 0;
+
     if(strlen(filename) > 11) {
         /* Long filenames not yet supported */
         return -1;
     }
-
-    off_t  dent_off = dir->first_cluster;
-    size_t curr_pos = 0;
 
     fat_dirent_t *dents = (fat_dirent_t *)malloc(hand->cluster_size);
     if(dents == NULL) {
@@ -187,20 +228,20 @@ int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_han
         return -1;
     }
 
-    /* @note Perhaps it would be better to just read the entire directory file
-     * into a buffer, then traverse it. */
-    while(curr_pos < dir->size) {
-        size_t dent_sz = hand->cluster_size;
-        if((dent_sz + curr_pos) > dir->size) {
-            dent_sz = (dir->size - curr_pos);
-        }
-
-        if((size_t)pread(hand->fd, dents, dent_sz, dent_off) != dent_sz) {
-            FAT_ERROR("fat_find_file: Could not read directory entry cluster\n");
+    /* @note Directories don't actually store their size in the directory entry,
+     * so we must simply continue until the cluster chain ends. */
+    while(dent_off) {
+        FAT_DEBUG("fat_find_file: pread(..., %ld)\n", dent_off);
+        if((size_t)pread(hand->fd, dents, hand->cluster_size, dent_off) != hand->cluster_size) {
+            FAT_ERROR("fat_find_file: Could not read directory entry cluster: %s\n", strerror(errno));
             goto file_not_found;
         }
 
-        for(size_t i = 0; i < (dent_sz / sizeof(fat_dirent_t)); i++) {
+        for(size_t i = 0; i < (hand->cluster_size / sizeof(fat_dirent_t)); i++) {
+            if((dents[i].filename[0] == '\0') ||
+               (dents[i].attr & FAT_DIRENT_ATTR_VOLUMELABEL)) {
+                continue;
+            }
             FAT_DEBUG("file: `%11s`\n", dents[i].filename);
             if(!_fat_strcmp(dents[i].filename, filename)) {
                 _populate_file_handle(hand, fhand, &dents[i]);
@@ -211,12 +252,7 @@ int fat_find_file(fat_handle_t *hand, const fat_file_handle_t *dir, fat_file_han
 
         curr_pos += hand->cluster_size;
         dent_off = _get_next_cluster(hand, dent_off);
-        if((curr_pos < dir->size) && (dent_off == 0)) {
-            FAT_ERROR("fat_find_file: Unexpected end of directory entries\n");
-            goto file_not_found;
-        }
     }
-    /* File not found */
 
 file_not_found:
     free(dents);
