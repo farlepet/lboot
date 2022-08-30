@@ -103,3 +103,16 @@ void *memmove(void *dst, const void *src, size_t n) {
 	return dst;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const uint8_t *b1 = s1;
+    const uint8_t *b2 = s2;
+
+    for(unsigned i = 0; i < n; i++) {
+        if(b1[i] != b2[i]) {
+            return b2[i] - b1[i];
+        }
+    }
+
+    return 0;
+}
+

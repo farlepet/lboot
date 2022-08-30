@@ -37,6 +37,16 @@ char *strdup(const char *str);
 
 void *memcpy(void *dest, const void *src, size_t n);
 
+/**
+ * @brief Compare data in two memory regions
+ *
+ * @param s1 First memory region
+ * @param s2 Second memory region
+ * @param n Number of bytes to check
+ * @return 0 on equal, else s2-s1 of the offending byte pair
+ */
+int memcmp(const void *s1, const void *s2, size_t n);
+
 void *memset(void *s, int c, size_t n);
 
 void *memmove(void *dst, const void *src, size_t n);

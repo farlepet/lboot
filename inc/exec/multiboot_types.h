@@ -111,8 +111,13 @@ typedef struct {
 } multiboot2_tag_mmap_t;
 
 #pragma pack(push, 1)
+
+#define RSDPv1_SIZE (20)
+#define RSDPv2_SIZE (36)
+
 typedef struct {
     char     signature[8];
+#define ACPI_RSDP_SIGNATURE ("RSD PTR") /**< RSDP signature, not NULL terminated */
     uint8_t  checksum;
     char     oem_id[6];
     uint8_t  revision;
@@ -123,13 +128,13 @@ typedef struct {
     uint64_t xsdt_addr;
     uint8_t  checksum_extended;
     uint8_t  _reserved[3];
-} multiboot_acpi_rsdp_desc_t;
+} acpi_rsdp_desc_t;
 #pragma pack(pop)
 
 typedef struct {
-    uint32_t                   type;
-    uint32_t                   size;
-    multiboot_acpi_rsdp_desc_t rsdp;
+    uint32_t         type;
+    uint32_t         size;
+    acpi_rsdp_desc_t rsdp;
 } multiboot2_tag_acpi_rsdp_t;
 
 #endif

@@ -17,6 +17,8 @@ const char *_bootloader_name = "LBoot";
 static int _mboot2_poptag_module(multiboot2_tag_t *tag, const config_data_module_t *mod);
 static int _mboot2_poptag_meminfo(multiboot2_tag_t *tag);
 static int _mboot2_poptag_mmap(multiboot2_tag_t *tag);
+static int _mboot2_poptag_acpiold(multiboot2_tag_t *tag);
+static int _mboot2_poptag_acpinew(multiboot2_tag_t *tag);
 
 multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_t *cfg) {
     if((head->magic        != MULTIBOOT2_HEAD_MAGIC) ||
@@ -87,10 +89,14 @@ multiboot2_t *multiboot2_parse(const multiboot2_head_t *head, const config_data_
                             next_tag = NEXT_TAG(next_tag);
                             break;
                         case MULTIBOOT2_TAGTYPE_ACPI_OLD:
-                            /* @todo */
+                            if(!_mboot2_poptag_acpiold(next_tag)) {
+                                next_tag = NEXT_TAG(next_tag);
+                            }
                             break;
                         case MULTIBOOT2_TAGTYPE_ACPI_NEW:
-                            /* @todo */
+                            if(!_mboot2_poptag_acpinew(next_tag)) {
+                                next_tag = NEXT_TAG(next_tag);
+                            }
                             break;
                         default:
                             printf("Unhandled multiboot tag request: %d\n", reqs[i]);
@@ -249,3 +255,112 @@ static int _mboot2_poptag_mmap(multiboot2_tag_t *tag) {
     return 0;
 }
 
+static acpi_rsdp_desc_t *_rsdp = NULL;
+
+static int _mboot_find_acpi_rsdp() {
+    void *tst;
+
+    const char *rsdp_sig = ACPI_RSDP_SIGNATURE;
+
+    /* Search region 1: 0x00080000 - 0x0009FFFF (EBDA) */
+    for(tst = (void *)0x00080000; tst < (void *)0x000A0000; tst += 16) {
+        if(!memcmp(tst, rsdp_sig, 7)) {
+            _rsdp = tst;
+            return 0;
+        }
+    }
+
+    /* Search region 2: 0x000E0000 - 0x000FFFFF (BIOS data) */
+    for(tst = (void *)0x000E0000; tst < (void *)0x00100000; tst += 16) {
+        if(!memcmp(tst, rsdp_sig, 7)) {
+            _rsdp = tst;
+            return 0;
+        }
+    }
+
+#if (DEBUG_EXEC_MULTIBOOT)
+    printf("No RSDP table found\n");
+#endif
+
+    return -1;
+}
+
+static int _mboot2_poptag_acpiold(multiboot2_tag_t *tag) {
+    if(_rsdp == NULL) {
+        /* RSDP could be found already if both tags were requested. */
+        if(_mboot_find_acpi_rsdp()) {
+            return -1;
+        }
+    }
+
+    uint8_t checksum = 0;
+    for(unsigned i = 0; i < RSDPv1_SIZE; i++) {
+        checksum += ((uint8_t *)_rsdp)[i];
+    }
+
+    if(checksum != 0) {
+#if (DEBUG_EXEC_MULTIBOOT)
+        printf("Bad RSDPv1 checksum: %hhu\n", checksum);
+#endif
+        return -1;
+    }
+
+    tag->type = MULTIBOOT2_TAGTYPE_ACPI_OLD;
+    tag->size = sizeof(multiboot2_tag_t) + RSDPv1_SIZE;
+    memcpy(tag->data, _rsdp, RSDPv1_SIZE);
+
+#if (DEBUG_EXEC_MULTIBOOT)
+    printf("%p  TAG 14: %6s, %p\n", tag, _rsdp->oem_id, _rsdp->rsdt_address);
+#endif
+
+    return 0;
+}
+
+static int _mboot2_poptag_acpinew(multiboot2_tag_t *tag) {
+    if(_rsdp == NULL) {
+        /* RSDP could be found already if both tags were requested. */
+        if(_mboot_find_acpi_rsdp()) {
+            return -1;
+        }
+    }
+
+    if(_rsdp->revision != 2) {
+#if (DEBUG_EXEC_MULTIBOOT)
+        printf("RSDP is from ACPIv1\n");
+#endif
+        return -1;
+    }
+
+    uint8_t checksum = 0;
+    for(unsigned i = 0; i < RSDPv1_SIZE; i++) {
+        checksum += ((uint8_t *)_rsdp)[i];
+    }
+
+    if(checksum != 0) {
+#if (DEBUG_EXEC_MULTIBOOT)
+        printf("Bad RSDPv1 checksum: %hhu\n", checksum);
+#endif
+        return -1;
+    }
+
+    for(unsigned i = RSDPv1_SIZE; i < RSDPv2_SIZE; i++) {
+        checksum += ((uint8_t *)_rsdp)[i];
+    }
+
+    if(checksum != 0) {
+#if (DEBUG_EXEC_MULTIBOOT)
+        printf("Bad RSDPv2 checksum: %hhu\n", checksum);
+#endif
+        return -1;
+    }
+
+    tag->type = MULTIBOOT2_TAGTYPE_ACPI_NEW;
+    tag->size = sizeof(multiboot2_tag_t) + RSDPv2_SIZE;
+    memcpy(tag->data, _rsdp, RSDPv2_SIZE);
+
+#if (DEBUG_EXEC_MULTIBOOT)
+    printf("%p  TAG 15: %6s, %p, %lp\n", tag, _rsdp->oem_id, _rsdp->rsdt_address, _rsdp->xsdt_addr);
+#endif
+
+    return 0;
+}
