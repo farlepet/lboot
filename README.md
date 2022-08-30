@@ -21,6 +21,8 @@ Current Support
    - `MODULE`
    - `BASIC_MEMINFO`
    - `MMAP`
+   - `ACPI_OLD`
+   - `ACPI_NEW`
  - Outputs
    - VGA
    - Serial
@@ -34,7 +36,6 @@ Future Work
 -----------
 
  - Loading kernel via XModem
- - ACPI data via Multiboot 2
  - Flat binary support
  - Kernel relocation support (maybe)
  - Look into adding minimal FAT12 support to stage 1 loader
