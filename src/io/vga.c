@@ -27,12 +27,12 @@ static struct {
     .pos_y    = 0
 };
 
-static void _vga_clear(void);
-static void _vga_putchar(output_hand_t *out, char ch);
+static void    _vga_clear(void);
+static ssize_t _vga_write(output_hand_t *out, const void *data, size_t sz);
 #if (FEATURE_STATUSBAR)
-static void _vga_status(output_hand_t *out, const char *str);
+static void    _vga_status(output_hand_t *out, const char *str);
 #  if (FEATURE_WORKINGSTATUS)
-static void _vga_working(output_hand_t *out, working_status_e status);
+static void    _vga_working(output_hand_t *out, working_status_e status);
 #  endif
 #endif
 
@@ -40,7 +40,7 @@ int vga_init(output_hand_t *out) {
     _vga_clear();
 
     memset(out, 0, sizeof(output_hand_t));
-    out->putchar = _vga_putchar;
+    out->write   = _vga_write;
 #if (FEATURE_STATUSBAR)
     out->status  = _vga_status;
 #  if (FEATURE_WORKINGSTATUS)
@@ -66,9 +66,7 @@ static void _vga_scroll(void) {
     memset(&_vga_state.vidmem[_vga_state.res_x * (_vga_state.res_y - 1)], 0, _vga_state.res_x * 2);
 }
 
-static void _vga_putchar(output_hand_t *out, char ch) {
-    (void)out;
-
+static void _vga_putchar(char ch) {
     switch(ch) {
         case '\n':
             _vga_state.pos_x = 0;
@@ -89,6 +87,18 @@ static void _vga_putchar(output_hand_t *out, char ch) {
         _vga_state.pos_y = _vga_state.res_y-1;
         _vga_scroll();
     }
+}
+
+static ssize_t _vga_write(output_hand_t *out, const void *data, size_t sz) {
+    (void)out;
+
+    const char *chars = data;
+
+    for(size_t i = 0; i < sz; i++) {
+        _vga_putchar(chars[i]);
+    }
+
+    return sz;
 }
 
 #if (FEATURE_STATUSBAR)

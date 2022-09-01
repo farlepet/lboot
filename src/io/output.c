@@ -14,7 +14,7 @@ void putchar(char ch) {
         return;
     }
 
-    _current_output->putchar(_current_output, ch);
+    _current_output->write(_current_output, &ch, 1);
 }
 
 void puts(const char *str) {
@@ -22,10 +22,7 @@ void puts(const char *str) {
         return;
     }
 
-    while(*str) {
-        _current_output->putchar(_current_output, *str);
-        str++;
-    }
+    _current_output->write(_current_output, str, strlen(str));
 }
 
 

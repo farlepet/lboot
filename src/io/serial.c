@@ -8,7 +8,7 @@ typedef struct {
     uint16_t port;
 } serial_data_t;
 
-static void _serial_putchar(output_hand_t *out, char ch);
+static ssize_t _serial_write(output_hand_t *out, const void *data, size_t sz);
 
 int serial_init(output_hand_t *out, uint16_t port) {
     /* Disable interrupts */
@@ -34,7 +34,7 @@ int serial_init(output_hand_t *out, uint16_t port) {
                                (1U << SERIALREG_MCR_OUT2__POS));
 
     memset(out, 0, sizeof(output_hand_t));
-    out->putchar = _serial_putchar;
+    out->write = _serial_write;
 
     /* Perhaps excessive to allocate this, but we may want to add more in the
      * future. */
@@ -46,11 +46,21 @@ int serial_init(output_hand_t *out, uint16_t port) {
 }
 
 
-static void _serial_putchar(output_hand_t *out, char ch) {
-    const serial_data_t *sdata = (serial_data_t *)out->data;
-    
+static void _serial_putchar(const serial_data_t *sdata, uint8_t ch) {
     while(!(inb(SERIAL_REG_LSR(sdata->port)) & (1U << SERIALREG_LSR_THRE__POS))) {}
 
     outb(SERIAL_REG_DATA(sdata->port), ch);
+}
+
+static ssize_t _serial_write(output_hand_t *out, const void *data, size_t sz) {
+    const serial_data_t *sdata = out->data;
+
+    const uint8_t *bdata = data;
+
+    for(size_t i = 0; i < sz; i++) {
+        _serial_putchar(sdata, bdata[i]);
+    }
+
+    return sz;
 }
 

@@ -20,16 +20,14 @@ struct output_hand_struct {
     void *data; /**< Pointer to output-specific data */
 
     /**
-     * @brief Pass a single character to the output device
-     *
-     * @note While passing a single character at a time to a function pointer
-     * may not be efficient, currently there is no high demand placed on the
-     * output device. Perhaps this will change with the addition of XMODEM.
+     * @brief Write a buffer to the output device
      *
      * @param out Output handle
-     * @param ch Character
+     * @param data Data to send
+     * @param sz Number of bytes
+     * @return < 0 on error, number of bytes written on success
      */
-    void (*putchar)(output_hand_t *out, char ch);
+    ssize_t (*write)(output_hand_t *out, const void *data, size_t sz);
 
 #if (FEATURE_STATUSBAR)
     /**
