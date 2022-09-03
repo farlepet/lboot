@@ -14,13 +14,13 @@ static void _config_print(const config_data_t *cfg);
 #endif
 
 int config_load(config_data_t *cfg, fs_hand_t *fs, const char *path) {
-    fs_file_t cfgfile;
+    file_hand_t cfgfile;
     if(fs_findfile(fs, NULL, &cfgfile, path)) {
         return -1;
     }
 
     char *cfgdata = alloc(cfgfile.size, 0);
-    if(fs->read(fs, &cfgfile, cfgdata, cfgfile.size, 0) != (ssize_t)cfgfile.size) {
+    if(cfgfile.read(&cfgfile, cfgdata, cfgfile.size, 0) != (ssize_t)cfgfile.size) {
         return -1;
     }
     

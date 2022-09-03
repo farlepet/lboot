@@ -5,7 +5,7 @@
 #include "mm/alloc.h"
 #include "storage/fs/fs.h"
 
-int fs_findfile(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *path) {
+int fs_findfile(fs_hand_t *fs, const file_hand_t *dir, file_hand_t *file, const char *path) {
     if(*path == FS_PATHSEP) {
         /* Start at root */
         dir = NULL;
@@ -22,8 +22,8 @@ int fs_findfile(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char
 
     /* Not the most elegant, but ensures we aren't reading and writing the same
      * variable in one `find` call. */
-    fs_file_t tdir1;
-    fs_file_t tdir2;
+    file_hand_t tdir1;
+    file_hand_t tdir2;
 
     while(*cpath) {
         char *sep = strchr(cpath, FS_PATHSEP);
@@ -38,8 +38,8 @@ int fs_findfile(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char
                 printf("Not a directory\n");
                 goto fs_findfile_fail;
             }
-            if(dir == &tdir1) {
-                fs->file_destroy(fs, &tdir1);
+            if((dir == &tdir1) && (tdir1.close)) {
+                tdir1.close(&tdir1);
             }
             memcpy(&tdir1, &tdir2, sizeof(tdir1));
             dir = &tdir1;
@@ -54,8 +54,8 @@ int fs_findfile(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char
         }
     }
 
-    if(dir == &tdir1) {
-        fs->file_destroy(fs, &tdir1);
+    if((dir == &tdir1) && (tdir1.close)) {
+        tdir1.close(&tdir1);
     }
 
     return 0;

@@ -35,7 +35,7 @@ Features can be toggled via `inc/config.h`. Stage 2 size based on features:
 Future Work
 -----------
 
- - Loading kernel via XModem
+ - Loading kernel via Kermit
  - Flat binary support
  - Kernel relocation support (maybe)
  - Look into adding minimal FAT12 support to stage 1 loader

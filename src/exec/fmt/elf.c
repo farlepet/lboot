@@ -61,11 +61,9 @@ static int _elf_prepare(exec_hand_t *exec) {
         printf("_elf_prepare: Explicit address given, ignoring (no relocation support)\n");
     }
 
-    fs_hand_t *fs = exec->file->fs;
-
     edata->ehdr = alloc(sizeof(elf_header_t), 0);
     
-    if(fs->read(fs, exec->file, edata->ehdr, sizeof(elf_header_t), 0) != sizeof(elf_header_t)) {
+    if(exec->file->read(exec->file, edata->ehdr, sizeof(elf_header_t), 0) != sizeof(elf_header_t)) {
         goto elf_prep_fail_1;
     }
 
@@ -89,7 +87,7 @@ static int _elf_prepare(exec_hand_t *exec) {
     size_t phdr_tot_size = edata->ehdr->e32.phentsize * edata->ehdr->e32.phnum;
     edata->phdr = alloc(phdr_tot_size, 0);
 
-    if(fs->read(fs, exec->file, edata->phdr, phdr_tot_size, edata->ehdr->e32.phoff) != (ssize_t)phdr_tot_size) {
+    if(exec->file->read(exec->file, edata->phdr, phdr_tot_size, edata->ehdr->e32.phoff) != (ssize_t)phdr_tot_size) {
         goto elf_prep_fail_2;
     }
 
@@ -120,8 +118,6 @@ elf_prep_fail_1:
 static int _elf_load_phdr(exec_hand_t *exec) {
     exec_elf_data_t *edata = exec->data;
 
-    fs_hand_t *fs = exec->file->fs;
-    
     for(unsigned i = 0; i < edata->ehdr->e32.phnum; i++) {
         elf32_phdr_t *phdr = &edata->phdr[i];
         if(phdr->type == ELF_PHDR_TYPE_LOAD) {
@@ -139,7 +135,7 @@ static int _elf_load_phdr(exec_hand_t *exec) {
 #if (DEBUG_EXEC_ELF)
                 printf("  Loading  %6u bytes from file into %p.\n", phdr->filesz, phdr->paddr);
 #endif
-                if(fs->read(fs, exec->file, (void *)phdr->paddr, phdr->filesz, phdr->offset) != (ssize_t)phdr->filesz) {
+                if(exec->file->read(exec->file, (void *)phdr->paddr, phdr->filesz, phdr->offset) != (ssize_t)phdr->filesz) {
                     printf("_elf_load_phdr: Failure reading %u bytes of data into %p from %p\n", phdr->filesz, phdr->paddr, phdr->offset);
                     return -1;
                 }

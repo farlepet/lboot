@@ -19,7 +19,7 @@ typedef struct {
     off_t    rootdir_first_cluster; /**< Offset into filesystem of first cluster of root directory, in bytes */
     size_t   rootdir_size;          /**< Size of root directory in bytes */
 
-    fs_file_t       rootdir;       /**< File representing root directory - internal use only*/
+    file_hand_t     rootdir;       /**< File representing root directory - internal use only*/
     fat_file_data_t _rootdir_data; /**< Data for rootdir file, preventing an extra allocation - internal use only */
 
 #define FAT_CACHE_CNT (4) /**< Number of FAT clusters to cache */
@@ -30,9 +30,9 @@ typedef struct {
     } cache;
 } fat_data_t;
 
-static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t sz, off_t off);
-static int     _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *name);
-static int     _fat_file_destroy(fs_hand_t *fs, fs_file_t *file);
+static ssize_t _fat_file_read(const file_hand_t *file, void *buf, size_t sz, off_t off);
+static int     _fat_fs_find(fs_hand_t *fs, const file_hand_t *dir, file_hand_t *file, const char *name);
+static int     _fat_file_close(file_hand_t *file);
 
 int fs_fat_init(fs_hand_t *fs, storage_hand_t *storage, off_t off) {
     memset(fs, 0, sizeof(fs_hand_t));
@@ -48,9 +48,7 @@ int fs_fat_init(fs_hand_t *fs, storage_hand_t *storage, off_t off) {
         return -1;
     }
 
-    fs->read         = _fat_read;
-    fs->find         = _fat_find;
-    fs->file_destroy = _fat_file_destroy;
+    fs->find         = _fat_fs_find;
     
     fat_data_t *fdata   = (fat_data_t *)alloc(sizeof(fat_data_t), 0);
     fs->data = fdata;
@@ -67,6 +65,9 @@ int fs_fat_init(fs_hand_t *fs, storage_hand_t *storage, off_t off) {
     fdata->_rootdir_data.first_cluster = fdata->fat_offset + (fdata->fat_size * bootsec->fat_copies);
     fdata->rootdir.data                = &fdata->_rootdir_data;
     fdata->rootdir.attr                = FS_FILEATTR_DIRECTORY;
+    fdata->rootdir.fs                  = fs;
+    fdata->rootdir.read                = _fat_file_read;
+    fdata->rootdir.close               = _fat_file_close;
 
     fdata->data_offset = fdata->_rootdir_data.first_cluster + (bootsec->root_dir_entries * sizeof(fat_dirent_t));
 
@@ -175,10 +176,10 @@ static uint32_t _fat_get_fat_entry(fs_hand_t *fs, void *tmp, uint32_t clust_num)
     uint16_t fat_entry = 0;
     if((fat_entry_offset % fdata->cluster_size) == (fdata->cluster_size - 1)) {
         /* Split across cluster boundry */
-        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 1) | 
+        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 1) |
                     (_fat_read_fat_data(fs, tmp, fat_entry_offset + 1, 1) << 8);
     } else {
-        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 2); 
+        fat_entry = _fat_read_fat_data(fs, tmp, fat_entry_offset, 2);
     }
 
     if(clust_num & 1) {
@@ -221,9 +222,9 @@ static off_t _fat_get_next_cluster(fs_hand_t *fs, void *tmp, off_t curr_clust) {
     return next_clust;
 }
 
-static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t sz, off_t off) {
+static ssize_t _fat_file_read(const file_hand_t *file, void *buf, size_t sz, off_t off) {
 #if (DEBUG_FS_FAT)
-    printf("_fat_read(..., %p, %d, %d)\n", buf, sz, off);
+    printf("_fat_file_read(..., %p, %d, %d)\n", buf, sz, off);
 #endif
 
     if(!(file->attr & FS_FILEATTR_DIRECTORY) &&
@@ -231,6 +232,7 @@ static ssize_t _fat_read(fs_hand_t *fs, const fs_file_t *file, void *buf, size_t
         panic("Attempt to read past end of file!");
     }
 
+    fs_hand_t             *fs       = file->fs;
     const fat_data_t      *fdata    = (fat_data_t *)fs->data;
     const fat_file_data_t *filedata = (fat_file_data_t *)file->data;
 
@@ -323,16 +325,18 @@ static int _fat_strcmp(const char *fat_name, const char *filename) {
     return 0;
 }
 
-static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *dent) {
+static void _fat_pop_file(fs_hand_t *fs, file_hand_t *file, const fat_dirent_t *dent) {
     const fat_data_t *fdata = (fat_data_t *)fs->data;
     
     fat_file_data_t *filedata = (fat_file_data_t *)alloc(sizeof(fat_file_data_t), 0);
     filedata->first_cluster = fdata->data_offset + ((dent->start_cluster - 2) * fdata->cluster_size);
 
     memset(file, 0, sizeof(*file));
-    file->fs   = fs;
-    file->data = filedata;
-    file->size = dent->filesize;
+    file->fs    = fs;
+    file->data  = filedata;
+    file->size  = dent->filesize;
+    file->read  = _fat_file_read;
+    file->close = _fat_file_close;
 
     if(dent->attr & FAT_DIRENT_ATTR_DIRECTORY) {
         file->attr |= FS_FILEATTR_DIRECTORY;
@@ -345,9 +349,9 @@ static void _fat_pop_file(fs_hand_t *fs, fs_file_t *file, const fat_dirent_t *de
 #endif
 }
 
-static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const char *name) {
+static int _fat_fs_find(fs_hand_t *fs, const file_hand_t *dir, file_hand_t *file, const char *name) {
 #if (DEBUG_FS_FAT)
-    printf("_fat_find %s\n", name);
+    printf("_fat_fs_find %s\n", name);
 #endif
 
     const fat_data_t *fdata = (fat_data_t *)fs->data;
@@ -362,7 +366,7 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
 
     if(!strcmp(name, ".")) {
         /* Current directory, just copy data */
-        memcpy(file, dir, sizeof(fs_file_t));
+        memcpy(file, dir, sizeof(file_hand_t));
         file->data = alloc(sizeof(fat_file_data_t), 0);
         memcpy(file->data, dir->data, sizeof(fat_file_data_t));
         return 0;
@@ -373,7 +377,7 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
     off_t pos = 0;
     while(1) {
         /* Read one cluster at a time. */
-        if(_fat_read(fs, dir, dirents, fdata->cluster_size, pos) != fdata->cluster_size) {
+        if(_fat_file_read(dir, dirents, fdata->cluster_size, pos) != fdata->cluster_size) {
             /* Assume end of directory. */
             break;
         }
@@ -401,8 +405,8 @@ static int _fat_find(fs_hand_t *fs, const fs_file_t *dir, fs_file_t *file, const
     return -1;
 }
 
-static int _fat_file_destroy(fs_hand_t *fs, fs_file_t *file) {
-    const fat_data_t *fdata = (fat_data_t *)fs->data;
+static int _fat_file_close(file_hand_t *file) {
+    const fat_data_t *fdata = (fat_data_t *)file->fs->data;
 
     if(file == &fdata->rootdir) {
         panic("Attempted to destroy static root directory!");

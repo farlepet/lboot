@@ -66,7 +66,7 @@ void cstart(void) {
     }
     print_status("Loading kernel `%s`", _cfg.kernel_path);
 
-    fs_file_t kernel;
+    file_hand_t kernel;
     if(fs_findfile(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {
         panic("Failed to find kernel!\n");
     }

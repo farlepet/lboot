@@ -33,7 +33,7 @@ struct exec_hand_struct {
 
     multiboot2_head_t *multiboot;  /**< Location of multiboot header, if applicable */
 
-    fs_file_t         *file;       /**< File containing executable */
+    file_hand_t       *file;       /**< File containing executable */
 
     /**
      * @brief Grab executable information from file, and determine placement
@@ -64,7 +64,7 @@ struct exec_hand_struct {
  * @param file File to be executed
  * @return 0 on success, < 0 on failure.
  */
-int exec_open(exec_hand_t *exec, fs_file_t *file);
+int exec_open(exec_hand_t *exec, file_hand_t *file);
 
 /**
  * @brief Execute loaded binary.

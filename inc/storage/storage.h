@@ -9,9 +9,9 @@ typedef struct storage_hand_struct storage_hand_t;
  * @brief Storage device handle
  */
 struct storage_hand_struct {
-    size_t size; /**!< Size of storage device, in bytes */
+    size_t size; /**< Size of storage device, in bytes */
 
-    void  *data; /**!< Pointer to data needed by storage driver */
+    void  *data; /**< Pointer to data needed by storage driver */
 
     /**
      * @brief Read bytes from storage device

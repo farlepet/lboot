@@ -9,15 +9,14 @@
 #include "exec/fmt/elf.h"
 #include "exec/fmt/flat.h"
 
-int exec_open(exec_hand_t *exec, fs_file_t *file) {
+int exec_open(exec_hand_t *exec, file_hand_t *file) {
     memset(exec, 0, sizeof(*exec));
 
     exec->file    = file;
-    fs_hand_t *fs = file->fs;
 
     void *buf = alloc(EXEC_FIRSTCHUNK_SZ, 0);
 
-    if(fs->read(fs, exec->file, buf, EXEC_FIRSTCHUNK_SZ, 0) != EXEC_FIRSTCHUNK_SZ) {
+    if(exec->file->read(exec->file, buf, EXEC_FIRSTCHUNK_SZ, 0) != EXEC_FIRSTCHUNK_SZ) {
         printf("exec_open: Could not read first chunk from file.\n");
         return -1;
     }
@@ -58,19 +57,20 @@ static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
 
     fs_hand_t *fs = exec->file->fs;
 
-    fs_file_t modfile;
+    file_hand_t modfile;
 
     for(unsigned i = 0; i < cfg->module_count; i++) {
         addr = ALIGN(addr, 8);
 
         print_status("Loading module `%s` (%s)", cfg->modules[i].module_name, cfg->modules[i].module_name);
 
+        /* @todo Do not only search this filesystem, create generic accessor. */
         if(fs_findfile(fs, NULL, &modfile, cfg->modules[i].module_path)) {
             printf("_exec_load_modules: Could not find file\n");
             return -1;
         }
 
-        if(fs->read(fs, &modfile, (void *)addr, modfile.size, 0) != (ssize_t)modfile.size) {
+        if(modfile.read(&modfile, (void *)addr, modfile.size, 0) != (ssize_t)modfile.size) {
             printf("_exec_load_modules: Could not read from file\n");
             return -1;
         }
@@ -78,7 +78,7 @@ static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
         cfg->modules[i].module_addr = addr;
         cfg->modules[i].module_size = modfile.size;
 
-        fs->file_destroy(fs, &modfile);
+        modfile.close(&modfile);
 
         addr += cfg->modules[i].module_size;
     }
