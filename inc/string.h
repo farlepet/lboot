@@ -16,10 +16,30 @@ size_t strlen(const char *str);
  *
  * @param str1 first string
  * @param str2 second string
+ * @return 0 on equal, else str1-str2 of the offending byte pair
  */
 int strcmp(const char *str1, const char *str2);
 
 int strncmp(const char *str1, const char *str2, size_t num);
+
+/**
+ * Checks to see if two strings are identical, case-insensitive
+ *
+ * @param str1 first string
+ * @param str2 second string
+ * @return 0 on equal, else str1-str2 of the offending byte pair
+ */
+int strcasecmp(const char *str1, const char *str2);
+
+/**
+ * Checks to see if two strings are identical, case-insensitive with length
+ *
+ * @param str1 first string
+ * @param str2 second string
+ * @param num Number of characters to check
+ * @return 0 on equal, else str1-str2 of the offending byte pair
+ */
+int strncasecmp(const char *str1, const char *str2, size_t num);
 
 char *strchr(const char *s, int c);
 

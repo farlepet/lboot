@@ -25,6 +25,32 @@ int strncmp(const char *str1, const char *str2, size_t num) {
 	return (int)(*str1 - *str2);
 }
 
+#define _tolower(C) ((((C) >= 'A') && ((C) <= 'Z')) ? ((C) + ('a' - 'A')) : (C))
+
+int strcasecmp(const char *str1, const char *str2) {
+    char c1 = _tolower(*str1);
+    char c2 = _tolower(*str2);
+
+    while(c1 && (c1 == c2)) {
+        c1 = _tolower(*(++str1));
+        c2 = _tolower(*(++str2));
+    }
+
+    return (int)(c1 - c2);
+}
+
+int strncasecmp(const char *str1, const char *str2, size_t num) {
+    char c1 = _tolower(*str1);
+    char c2 = _tolower(*str2);
+
+    while(c1 && (c1 == c2) && --num) {
+        c1 = _tolower(*(++str1));
+        c2 = _tolower(*(++str2));
+    }
+
+    return (int)(c1 - c2);
+}
+
 char *strchr(const char *s, int c) {
 	while(*s) {
 		if(*s == (char)c) return (char *)s;
