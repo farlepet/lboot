@@ -55,8 +55,6 @@ int exec_open(exec_hand_t *exec, file_hand_t *file) {
 static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
     uintptr_t addr = exec->data_end;
 
-    fs_hand_t *fs = exec->file->fs;
-
     file_hand_t modfile;
 
     for(unsigned i = 0; i < cfg->module_count; i++) {
@@ -65,7 +63,7 @@ static int _exec_load_modules(exec_hand_t *exec, config_data_t *cfg) {
         print_status("Loading module `%s` (%s)", cfg->modules[i].module_name, cfg->modules[i].module_name);
 
         /* @todo Do not only search this filesystem, create generic accessor. */
-        if(fs_findfile(fs, NULL, &modfile, cfg->modules[i].module_path)) {
+        if(file_open(&modfile, cfg->modules[i].module_path)) {
             printf("_exec_load_modules: Could not find file\n");
             return -1;
         }
@@ -113,8 +111,6 @@ static void _exec_enter_multiboot2(uintptr_t entrypoint, uintptr_t mboot_ptr) {
 }
 
 static void _exec_enter(uintptr_t entrypoint) {
-    /* EAX: Magic number
-     * EBX: Pointer to multiboot header */
     asm volatile("mov %0,          %%edx\n"
                  "jmp *%%edx\n" ::
                  "m"(entrypoint));

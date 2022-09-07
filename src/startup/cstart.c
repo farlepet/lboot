@@ -52,7 +52,8 @@ void cstart(void) {
 
     puts("LBoot -- Built "__DATE__"\n");
 
-    /* @todo Actually use the device ID passed to us from the BIOS */
+    /* @todo Actually use the device ID passed to us from the BIOS, and don't
+     * directly handle this in main. */
     if(storage_bios_init(&_bootdev, 0x00)) {
         panic("Failed initializing storage!\n");
     }
@@ -61,8 +62,10 @@ void cstart(void) {
         panic("Failed initializing filesystem!\n");
     }
 
+    file_set_default_fs(&_bootfs);
+
     print_status("Loading config `%s`", _config_file);
-    if(config_load(&_cfg, &_bootfs, _config_file)) {
+    if(config_load(&_cfg, _config_file)) {
         panic("Failed loading config!\n");
     }
 
@@ -72,7 +75,7 @@ void cstart(void) {
     print_status("Loading kernel `%s`", _cfg.kernel_path);
 
     file_hand_t kernel;
-    if(fs_findfile(&_bootfs, NULL, &kernel, _cfg.kernel_path)) {
+    if(file_open(&kernel, _cfg.kernel_path)) {
         panic("Failed to find kernel!\n");
     }
 

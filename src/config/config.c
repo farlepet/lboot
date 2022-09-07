@@ -5,7 +5,7 @@
 #include "config/config.h"
 #include "io/output.h"
 #include "mm/alloc.h"
-#include "storage/fs/fs.h"
+#include "storage/file.h"
 
 static int _config_parse(config_data_t *cfg, char *cfgdata);
 
@@ -13,9 +13,9 @@ static int _config_parse(config_data_t *cfg, char *cfgdata);
 static void _config_print(const config_data_t *cfg);
 #endif
 
-int config_load(config_data_t *cfg, fs_hand_t *fs, const char *path) {
+int config_load(config_data_t *cfg, const char *path) {
     file_hand_t cfgfile;
-    if(fs_findfile(fs, NULL, &cfgfile, path)) {
+    if(file_open(&cfgfile, path)) {
         return -1;
     }
 

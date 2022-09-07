@@ -1,15 +1,20 @@
 #ifndef LBOOT_STORAGE_FILE_H
 #define LBOOT_STORAGE_FILE_H
 
-#include "storage/fs/fs.h"
-
 typedef struct file_hand_struct file_hand_t;
+
+#include "storage/fs/fs.h"
+#include "storage/protocol/protocol.h"
 
 /**
  * @brief File handle
  */
 struct file_hand_struct {
-    fs_hand_t *fs;   /**< Pointer to handle of owning filesystem. */
+    union {
+        fs_hand_t       *fs;    /**< Pointer to handle of owning filesystem */
+        protocol_hand_t *proto; /**< Pointer to handle of owning protocol */
+    };
+
     void      *data; /**< Data pointer used by the FS driver */
 
     size_t     size; /**< File size in bytes */
@@ -36,6 +41,22 @@ struct file_hand_struct {
      */
     int (*close)(file_hand_t *file);
 };
+
+/**
+ * @brief Find and open a file
+ *
+ * @param file File handle to populate
+ * @param path Path or URI to file
+ * @return 0 on success, < 0 on failure
+ */
+int file_open(file_hand_t *file, const char *path);
+
+/**
+ * @brief Sets default filesystem to search when opening a file
+ *
+ * @param fs Filesystem handle
+ */
+void file_set_default_fs(fs_hand_t *fs);
 
 #endif
 

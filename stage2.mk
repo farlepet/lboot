@@ -37,8 +37,10 @@ S2_SRCS = $(S2_SRCDIR)/startup/startup.s   \
 		  $(S2_SRCDIR)/stdlib/string.c     \
 		  $(S2_SRCDIR)/stdlib/stdlib.c     \
 		  $(S2_SRCDIR)/storage/bios.c      \
+		  $(S2_SRCDIR)/storage/file.c      \
 		  $(S2_SRCDIR)/storage/fs/fs.c     \
 		  $(S2_SRCDIR)/storage/fs/fat.c    \
+		  $(S2_SRCDIR)/storage/protocol/protocol.c \
 		  $(S2_SRCDIR)/time/pit.c          \
 		  $(S2_SRCDIR)/time/time.c
 
