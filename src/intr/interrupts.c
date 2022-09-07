@@ -147,7 +147,7 @@ extern void isr_wrapper_47(void);
 static void _idt_set_wrapper(uint8_t int_n, void *wrapper) {
     idt_entry_t ent  = {
         .offset_low  = (uint16_t)(uintptr_t)wrapper,
-        .segment     = 0,
+        .segment     = 0x0008,
         ._reserved   = 0,
         .flags       = IDT_FLAGS_INTR(1),
         .offset_high = (uint16_t)((uintptr_t)wrapper >> 16)

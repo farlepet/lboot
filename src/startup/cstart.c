@@ -11,6 +11,7 @@
 #include "storage/bios.h"
 #include "storage/fs/fs.h"
 #include "storage/fs/fat.h"
+#include "time/time.h"
 
 static void _init_data(void) {
     /* Clear BSS */
@@ -33,6 +34,7 @@ void cstart(void) {
     _init_data();
 
     interrupts_init();
+    time_init();
 
     vga_init(&_vga);
     output_set(&_vga);

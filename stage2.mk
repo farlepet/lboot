@@ -38,7 +38,9 @@ S2_SRCS = $(S2_SRCDIR)/startup/startup.s   \
 		  $(S2_SRCDIR)/stdlib/stdlib.c     \
 		  $(S2_SRCDIR)/storage/bios.c      \
 		  $(S2_SRCDIR)/storage/fs/fs.c     \
-		  $(S2_SRCDIR)/storage/fs/fat.c
+		  $(S2_SRCDIR)/storage/fs/fat.c    \
+		  $(S2_SRCDIR)/time/pit.c          \
+		  $(S2_SRCDIR)/time/time.c
 
 S2_OBJS = $(filter %.o,$(patsubst $(S2_SRCDIR)/%.c,$(S2_BUILDDIR)/%.o,$(S2_SRCS)) \
                        $(patsubst $(S2_SRCDIR)/%.s,$(S2_BUILDDIR)/%.o,$(S2_SRCS)))

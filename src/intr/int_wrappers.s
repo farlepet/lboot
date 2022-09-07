@@ -10,6 +10,7 @@
         pusha
         push $\num
         call interrupt_wrapper
+        addl $4, %esp # Interrupt number
         popa
     .if !\err
         addl $4, %esp # Errcode
