@@ -4,6 +4,7 @@
 #include "config/config.h"
 #include "mm/alloc.h"
 #include "exec/exec.h"
+#include "intr/interrupts.h"
 #include "io/output.h"
 #include "io/serial.h"
 #include "io/vga.h"
@@ -30,6 +31,8 @@ static config_data_t _cfg;
 
 void cstart(void) {
     _init_data();
+
+    interrupts_init();
 
     vga_init(&_vga);
     output_set(&_vga);

@@ -3,9 +3,9 @@
 .extern bios_idt
 
 /* int bios_call(bios_call_t *) */
-.global bios_call
-.type   bios_call, @function
-bios_call:
+.global bios_call_asm
+.type   bios_call_asm, @function
+bios_call_asm:
     pushal    
 
     /* Save BIOS call parameter pointer */
@@ -160,7 +160,7 @@ _int_id:
 
     popal
     ret
-.size bios_call, (. - bios_call)
+.size bios_call_asm, (. - bios_call_asm)
 
 _bios_call_ptr:
     .skip 4
