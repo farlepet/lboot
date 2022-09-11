@@ -32,8 +32,11 @@ int strcasecmp(const char *str1, const char *str2) {
     char c2 = _tolower(*str2);
 
     while(c1 && (c1 == c2)) {
-        c1 = _tolower(*(++str1));
-        c2 = _tolower(*(++str2));
+        str1++;
+        str2++;
+
+        c1 = _tolower(*str1);
+        c2 = _tolower(*str2);
     }
 
     return (int)(c1 - c2);
@@ -44,8 +47,11 @@ int strncasecmp(const char *str1, const char *str2, size_t num) {
     char c2 = _tolower(*str2);
 
     while(c1 && (c1 == c2) && --num) {
-        c1 = _tolower(*(++str1));
-        c2 = _tolower(*(++str2));
+        str1++;
+        str2++;
+
+        c1 = _tolower(*str1);
+        c2 = _tolower(*str2);
     }
 
     return (int)(c1 - c2);
@@ -57,6 +63,30 @@ char *strchr(const char *s, int c) {
 		s++;
 	}
 	return NULL;
+}
+
+char *strstr(const char *haystack, const char *needle) {
+    size_t haystack_sz = strlen(haystack);
+    size_t needle_sz   = strlen(needle);
+
+    if(haystack_sz < needle_sz) {
+        return NULL;
+    }
+
+    for(size_t i = 0; i <= (haystack_sz - needle_sz); i++) {
+        size_t j = 0;
+        for(; j < needle_sz; j++) {
+            if(haystack[i + j] != needle[j]) {
+                break;
+            }
+        }
+
+        if(j == needle_sz) {
+            return (char *)&haystack[i];
+        }
+    }
+
+    return NULL;
 }
 
 char *strcpy(char *dest, const char *src) {

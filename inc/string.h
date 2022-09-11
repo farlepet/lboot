@@ -43,6 +43,15 @@ int strncasecmp(const char *str1, const char *str2, size_t num);
 
 char *strchr(const char *s, int c);
 
+/**
+ * @brief Search for a substring within a string
+ *
+ * @param haystack String to search within
+ * @param needle String to search for
+ * @return Pointer to needle within haystack, or NULL if none found
+ */
+char *strstr(const char *haystack, const char *needle);
+
 char *strcpy(char *dest, const char *src);
 
 char *strncpy(char *dest, const char *src, size_t n);
