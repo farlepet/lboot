@@ -21,6 +21,7 @@ S2_SRCS = $(S2_SRCDIR)/startup/startup.s   \
 		  $(S2_SRCDIR)/bios/bios_asm.s     \
 		  $(S2_SRCDIR)/bios/bios.c         \
 		  $(S2_SRCDIR)/config/config.c     \
+		  $(S2_SRCDIR)/data/fifo.c         \
 		  $(S2_SRCDIR)/exec/exec.c         \
 		  $(S2_SRCDIR)/exec/multiboot.c    \
 		  $(S2_SRCDIR)/exec/fmt/elf.c      \

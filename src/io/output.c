@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "intr/interrupts.h"
 #include "io/output.h"
 
 static output_hand_t *_current_output = NULL;
@@ -403,6 +404,8 @@ int printf(const char *fmt, ...) {
 }
 
 void _panic(const char *fmt, ...) {
+    interrupts_disable();
+
     __builtin_va_list varg;
     __builtin_va_start(varg, fmt);
 

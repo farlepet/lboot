@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "intr/pic.h"
+#include "bios/bios.h"
 
 /**
  * @brief Interrupt IDs
@@ -54,6 +55,7 @@ typedef enum int_id_enum {
     INT_ID_MAX
 } int_id_e;
 
+/* @todo Possibly use separate handler types for 0-31 (exceptions), and the rest. */
 typedef void (*interrupt_handler_t)(uint8_t int_id, uint32_t errno, void *data);
 
 /**
@@ -68,6 +70,18 @@ static inline void interrupts_enable(void) {
  */
 static inline void interrupts_disable(void) {
     asm volatile("cli");
+}
+
+/**
+ * @brief Checks if interrupts are currently enabled
+ *
+ * @return 1 if interrupts are enabled, else 0
+ */
+static inline int interrupts_enabled(void) {
+    uint32_t eflags = 0;
+    asm volatile("pushf   \n"
+	             "popl %0 \n" : "=r"(eflags));
+    return (eflags & EFLAGS_IF) != 0;
 }
 
 /**

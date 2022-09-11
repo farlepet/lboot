@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "intr/interrupts.h"
+#include "io/output.h"
 #include "time/pit.h"
 #include "time/time.h"
 
@@ -42,6 +43,10 @@ int time_ispast(time_ticks_t *ticks) {
 }
 
 void time_delay(uint32_t ms) {
+    if(!interrupts_enabled()) {
+        panic("Attempt to time_delay() while interrupts disabled");
+    }
+
     time_ticks_t end;
     time_offset(&end, ms);
     while(!time_ispast(&end)) {

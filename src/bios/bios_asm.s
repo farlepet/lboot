@@ -6,7 +6,7 @@
 .global bios_call_asm
 .type   bios_call_asm, @function
 bios_call_asm:
-    pushal    
+    pushal
 
     /* Save BIOS call parameter pointer */
     movl 36(%esp), %eax
@@ -21,7 +21,7 @@ bios_call_asm:
      * Enter real mode
      */
     /* 1. Disable interrupts */
-    cli
+    /* Interrupt disable is done in bios_call() */
     /* Disable NMI */
     inb  $0x70, %al
     orb  $0x80, %al
@@ -150,13 +150,12 @@ _int_id:
     lidt (_saved_idtr)
 
     /* 11. Re-enable interrupts */
-    /* @todo Properly setup IDT, then we can re-enable interrupts */
-    /* sti */
+    /* Interrupt enable is done in bios_call() */
     /* Enable NMI */
-    /*inb  $0x70, %al
+    inb  $0x70, %al
     andb $0x7F, %al
     outb %al,  $0x80
-    inb  $0x71, %al*/
+    inb  $0x71, %al
 
     popal
     ret

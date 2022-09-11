@@ -4,14 +4,31 @@
 #include <stdint.h>
 
 #include "io/output.h"
+#include "io/input.h"
+
+#define SERIAL_CFG_PORT__POS      (   0  ) /**< Serial port to use */
+#define SERIAL_CFG_PORT__MSK      (0x03UL)
+#define SERIAL_CFG_PORT_COM1      (   0UL)
+#define SERIAL_CFG_PORT_COM2      (   1UL)
+#define SERIAL_CFG_PORT_COM3      (   2UL)
+#define SERIAL_CFG_PORT_COM4      (   3UL)
+#define SERIAL_CFG_INBUFFSZ__POS  (   2  ) /**< n, where input buffer size = 2^n. n=0 means no buffer */
+#define SERIAL_CFG_INBUFFSZ__MSK  (0x07UL)
+#define SERIAL_CFG_OUTBUFFSZ__POS (   5  ) /**< n, where output buffer size = 2^n. n=0 means no buffer */
+#define SERIAL_CFG_OUTBUFFSZ__MSK (0x07UL)
 
 /**
  * @brief Initialize serial driver
  *
- * @param out Output device handle to populate
- * @param port Base port of desired serial port
+ * @param in Input device handle to populate, or NULL
+ * @param out Output device handle to populate, or NULL
+ * @param baud Desired baud rate
+ * @param cfg Desired serial config, see `SERIAL_CFG_*`
+ * @return 0 on success, < 0 on error
  */
-int serial_init(output_hand_t *out, uint16_t port);
+int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cfg);
+
+
 
 #define SERIAL_REG_DATA(P) ((P) + 0) /**< Rx/Tx buffer */
 #define SERIAL_REG_IER(P)  ((P) + 1) /**< Interrupt enable register */
@@ -27,14 +44,23 @@ int serial_init(output_hand_t *out, uint16_t port);
 #define SERIAL_REG_DLM(P)  ((P) + 1) /**< Divisor latch high */
 
 
+/*
+ * 8250 UART controller registers
+ */
+
 #define SERIALREG_IER_RXAVAIL__POS      (   0) /**< Received data available */
 #define SERIALREG_IER_TXEMPTY__POS      (   1) /**< Transmit holding register empty */
 #define SERIALREG_IER_RXLINESTATUS__POS (   2) /**< Receiver line status */
 #define SERIALREG_IER_MODEMSTATUS__POS  (   3) /**< Modem status */
 
-#define SERIALREG_IIR_NOTPENDING__POS   (   0) /**< 0 if interrupt pending */
-#define SERIALREG_IIR_INTID__POS        (   1) /**< Interrupt ID */
-#define SERIALREG_IIR_INTID__MSK        (0x03)
+#define SERIALREG_IIR_NOTPENDING__POS      (   0) /**< 0 if interrupt pending */
+#define SERIALREG_IIR_INTID__POS           (   1) /**< Interrupt ID */
+#define SERIALREG_IIR_INTID__MSK           (0x03)
+#define SERIALREG_IIR_INTID_MODEMSTATUS    (   0) /**< Modem status interrupt */
+#define SERIALREG_IIR_INTID_TXEMPTY        (   1) /**< TX holding register empty */
+#define SERIALREG_IIR_INTID_RXAVAIL        (   2) /**< RX data available */
+#define SERIALREG_IIR_INTID_RXLINESTATUS   (   3) /**< RX line status */
+#define SERIALREG_IIR_INTID_TIMEOUTPENDING (   6) /**< Timeout interrupt pending */
 
 #define SERIALREG_FCR_FIFOEN__POS       (   0) /**< FIFO Enable */
 #define SERIALREG_FCR_RXFIFORST__POS    (   1) /**< RX FIFO Reset */

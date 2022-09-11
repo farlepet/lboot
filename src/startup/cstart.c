@@ -46,7 +46,9 @@ void cstart(void) {
     alloc_init((uint32_t)&__lboot_end, 0x80000 - (uint32_t)&__lboot_end);
 
 #if (USE_SERIAL)
-    serial_init(&_serial, 0x3f8);
+    serial_init(NULL, &_serial, 115200, ((SERIAL_CFG_PORT_COM1 << SERIAL_CFG_PORT__POS)     |
+                                         (4                    << SERIAL_CFG_INBUFFSZ__POS) |
+                                         (4                    << SERIAL_CFG_OUTBUFFSZ__POS)));
     output_set(&_serial);
 #endif
 
