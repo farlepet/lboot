@@ -132,6 +132,10 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
         if(!fifo_isinitialized(&sdata->rxfifo)) {
             uint8_t in_sz = (cfg >> SERIAL_CFG_INBUFFSZ__POS) & SERIAL_CFG_INBUFFSZ__MSK;
             if(in_sz) {
+                if(in_sz < 4) {
+                    in_sz = 4;
+                }
+
                 fifo_init(&sdata->rxfifo, 1UL << in_sz);
                 /* Enable RX data available interrupt */
                 int_en |= 1U << SERIALREG_IER_RXAVAIL__POS;
@@ -149,6 +153,10 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
         if(!fifo_isinitialized(&sdata->txfifo)) {
             uint8_t out_sz = (cfg >> SERIAL_CFG_OUTBUFFSZ__POS) & SERIAL_CFG_OUTBUFFSZ__MSK;
             if(out_sz) {
+                if(out_sz < 4) {
+                    out_sz = 4;
+                }
+
                 fifo_init(&sdata->txfifo, 1UL << out_sz);
                 /* Enable TX buffer empty interrupt */
                 int_en |= 1U << SERIALREG_IER_TXEMPTY__POS;
@@ -249,7 +257,7 @@ static inline void _serial_rx_flowcontrol(serial_data_t *sdata) {
 
     uint16_t new_mcr = sdata->mcr_val;
 
-    if(fifo_getfree(&sdata->rxfifo) < ((sdata->rxfifo.size < 8) ? (sdata->rxfifo.size - 1) :
+    if(fifo_getused(&sdata->rxfifo) < ((sdata->rxfifo.size < 8) ? (sdata->rxfifo.size - 2) :
                                                                   (sdata->rxfifo.size - 3))) {
         /* De-assert RTS */
         if((sdata->mcr_val & (1U << SERIALREG_MCR_RTS__POS)) &&
@@ -300,7 +308,11 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
                 rd_sz = sz - i;
             }
             if(rd_sz) {
-                fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                if(bdata) {
+                    fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                } else {
+                    fifo_read(&sdata->rxfifo, NULL, rd_sz);
+                }
                 _serial_rx_flowcontrol(sdata);
                 i += rd_sz;
             }
@@ -312,10 +324,18 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
                 if(rd_sz > (sz - i)) {
                     rd_sz = sz - i;
                 }
-                fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                if(bdata) {
+                    fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                } else {
+                    fifo_read(&sdata->rxfifo, NULL, rd_sz);
+                }
                 _serial_rx_flowcontrol(sdata);
             } else if(_serial_rx_dataready(sdata)) {
-                bdata[i++] = _serial_read_byte(sdata);
+                if(bdata) {
+                    bdata[i++] = _serial_read_byte(sdata);
+                } else {
+                    _serial_read_byte(sdata);
+                }
             }
         }
 

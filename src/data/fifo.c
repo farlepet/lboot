@@ -60,9 +60,15 @@ int fifo_read(fifo_t *fifo, void *buf, size_t sz) {
         return -1;
     }
 
-    uint8_t *buf8 = buf;
-    for(size_t i = 0; i < sz; i++) {
-        buf8[i] = _fifo_read_byte(fifo);
+    if(buf) {
+        uint8_t *buf8 = buf;
+        for(size_t i = 0; i < sz; i++) {
+            buf8[i] = _fifo_read_byte(fifo);
+        }
+    } else {
+        for(size_t i = 0; i < sz; i++) {
+            _fifo_read_byte(fifo);
+        }
     }
 
     return 0;

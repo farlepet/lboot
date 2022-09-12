@@ -49,7 +49,7 @@ int fifo_write(fifo_t *fifo, const void *buf, size_t sz);
  * @note If the entire requested size is not available, no data is read
  *
  * @param fifo FIFO handle
- * @param buf Where to write data to
+ * @param buf Where to write data to, dumps data if NULL
  * @baram sz Number of bytes to read from the FIFO
  * @return 0 on success, < 0 on failure
  */

@@ -15,7 +15,7 @@ struct input_hand_struct {
      * @brief Read date from input
      *
      * @param in Input device handle
-     * @param data Buffer in which to store data
+     * @param data Buffer in which to store data, NULL to throw away data
      * @parma sz Maximum number of bytes to read
      * @param timeout Maximum timeout to receive data in milliseconds
      * @return Number of bytes read on success, < 0 on error
