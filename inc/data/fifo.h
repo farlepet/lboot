@@ -63,14 +63,14 @@ int fifo_read(fifo_t *fifo, void *buf, size_t sz);
  *
  * @return Number of unused bytes
  */
-size_t fifo_getfree(fifo_t *fifo);
+size_t fifo_getfree(const fifo_t *fifo);
 
 /**
  * @brief Gets the number of used bytes from the FIFO
  *
  * @return Number of used bytes
  */
-size_t fifo_getused(fifo_t *fifo);
+size_t fifo_getused(const fifo_t *fifo);
 
 #endif
 

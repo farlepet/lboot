@@ -8,7 +8,6 @@
 /** Whether to use serial as main output device. */
 #define USE_SERIAL (0)
 
-
 /*
  * FEATURE
  */
@@ -25,18 +24,38 @@
  */
 
 /** Enable debug prints from config code. */
-#define DEBUG_CONFIG         (0)
+#define DEBUG_CONFIG          (0)
 /** Enable debug prints from BIOS storage code. */
-#define DEBUG_STORAGE_BIOS   (0)
+#define DEBUG_STORAGE_BIOS    (0)
 /** Enable debug prints from FAT filesystem code. */
-#define DEBUG_FS_FAT         (0)
+#define DEBUG_FS_FAT          (0)
 /** Enable debug prints from execution code. */
-#define DEBUG_EXEC           (0)
+#define DEBUG_EXEC            (0)
 /** Enable debug prints from multiboot code. */
-#define DEBUG_EXEC_MULTIBOOT (0)
+#define DEBUG_EXEC_MULTIBOOT  (0)
 /** Enable debug prints from ELF execution code. */
-#define DEBUG_EXEC_ELF       (0)
+#define DEBUG_EXEC_ELF        (0)
+/** Enable debug prints for XMODEM protocol */
+#define DEBUG_PROTOCOL_XMODEM (0)
 
+/*
+ * SERIAL
+ */
+/** Whether to enable SW FIFO for serial, and what size to use (as 2^n) */
+#define SERIAL_FIFO_SIZE   (     8)
+/** Baud rate to use for serial communication.
+ *  @todo Allow dynamic configuration */
+#define SERIAL_BAUDRATE    (115200)
+
+
+/*
+ * ASSERT
+ */
+#if (USE_SERIAL && DEBUG_PROTOCOL_XMODEM)
+/* Technically this would be fine if COM1 is used for debug, and COM2 was used
+ * for XMODEM, but this isn't terribly likely. */
+#  error "Cannot enable both USE_SERIAL and DEBUG_PROTOCOL_XMODEM"
+#endif
 
 #endif
 

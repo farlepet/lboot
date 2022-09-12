@@ -6,16 +6,18 @@
 #include "io/output.h"
 #include "io/input.h"
 
-#define SERIAL_CFG_PORT__POS      (   0  ) /**< Serial port to use */
-#define SERIAL_CFG_PORT__MSK      (0x03UL)
-#define SERIAL_CFG_PORT_COM1      (   0UL)
-#define SERIAL_CFG_PORT_COM2      (   1UL)
-#define SERIAL_CFG_PORT_COM3      (   2UL)
-#define SERIAL_CFG_PORT_COM4      (   3UL)
-#define SERIAL_CFG_INBUFFSZ__POS  (   2  ) /**< n, where input buffer size = 2^n. n=0 means no buffer */
-#define SERIAL_CFG_INBUFFSZ__MSK  (0x07UL)
-#define SERIAL_CFG_OUTBUFFSZ__POS (   5  ) /**< n, where output buffer size = 2^n. n=0 means no buffer */
-#define SERIAL_CFG_OUTBUFFSZ__MSK (0x07UL)
+#define SERIAL_CFG_PORT__POS         (   0  ) /**< Serial port to use */
+#define SERIAL_CFG_PORT__MSK         (0x03UL)
+#define SERIAL_CFG_PORT_COM1         (   0UL)
+#define SERIAL_CFG_PORT_COM2         (   1UL)
+#define SERIAL_CFG_PORT_COM3         (   2UL)
+#define SERIAL_CFG_PORT_COM4         (   3UL)
+#define SERIAL_CFG_INBUFFSZ__POS     (   2  ) /**< n, where input buffer size = 2^n. n=0 means no buffer */
+#define SERIAL_CFG_INBUFFSZ__MSK     (0x0fUL)
+#define SERIAL_CFG_OUTBUFFSZ__POS    (   6  ) /**< n, where output buffer size = 2^n. n=0 means no buffer */
+#define SERIAL_CFG_OUTBUFFSZ__MSK    (0x0fUL)
+#define SERIAL_CFG_FLOWCTRL_RTS__POS (  10  ) /**< Enable RTS/CTS flow control (RX-only currently) */
+#define SERIAL_CFG_FLOWCTRL_DTR__POS (  11  ) /**< Enable DTR/DSR flow control (RX-only currently) */
 
 /**
  * @brief Initialize serial driver
@@ -98,7 +100,7 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
 #define SERIALREG_LSR_TEMT__POS         (   6) /**< Data Holding Register Empty */
 
 #define SERIALREG_MSR_DCTS__POS         (   0) /**< Change in CTS */
-#define SERIALREG_MSR_DDSR__POS         (   1) /**< Change in DTR */
+#define SERIALREG_MSR_DDSR__POS         (   1) /**< Change in DSR */
 #define SERIALREG_MSR_TERI__POS         (   2) /**< RI De-asserted */
 #define SERIALREG_MSR_DDCD__POS         (   3) /**< Change in DCD */
 #define SERIALREG_MSR_CTS__POS          (   4) /**< CTS asserted */

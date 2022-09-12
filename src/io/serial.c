@@ -9,9 +9,11 @@
 #include "time/time.h"
 
 typedef struct {
-    uint16_t port;   /**< Base IO port of serial port */
-    fifo_t   rxfifo; /**< Serial input buffer */
-    fifo_t   txfifo; /**< Serial output buffer */
+    uint32_t cfg;     /**< Copy of config value passed in init */
+    uint16_t port;    /**< Base IO port of serial port */
+    uint8_t  mcr_val; /**< Current value of MCR register, for flow control */
+    fifo_t   rxfifo;  /**< Serial input buffer */
+    fifo_t   txfifo;  /**< Serial output buffer */
 } serial_data_t;
 
 /*
@@ -118,6 +120,8 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
         panic("serial: Attempt to use more than %u serial ports", MAX_PORT_COUNT);
     }
 
+    sdata->cfg = cfg;
+
     uint8_t int_en = 0x00;
 
     if(in) {
@@ -162,6 +166,8 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
         outb(SERIAL_REG_IER(port), int_en);
     }
 
+    sdata->mcr_val = inb(SERIAL_REG_MCR(sdata->port));
+
     return 0;
 }
 
@@ -177,21 +183,11 @@ static void _serial_write_byte(const serial_data_t *sdata, uint8_t byte) {
     outb(SERIAL_REG_DATA(sdata->port), byte);
 }
 
-static inline int _serial_rx_dataready(const serial_data_t *sdata) {
-    return inb(SERIAL_REG_LSR(sdata->port)) & (1U << SERIALREG_LSR_DR__POS);
-}
-
-static uint8_t _serial_read_byte(const serial_data_t *sdata) {
-    while(!_serial_rx_dataready(sdata)) {
-        /* Busy-wait */
-    }
-
-    return inb(SERIAL_REG_DATA(sdata->port));
-}
-
 static ssize_t _serial_write(output_hand_t *out, const void *data, size_t sz) {
     serial_data_t *sdata = out->data;
     const uint8_t *bdata = data;
+
+    /* @todo Remove support for operation without FIFOs */
 
     if(interrupts_enabled() &&
        fifo_isinitialized(&sdata->txfifo)) {
@@ -233,6 +229,56 @@ static ssize_t _serial_write(output_hand_t *out, const void *data, size_t sz) {
     return sz;
 }
 
+static inline int _serial_rx_dataready(const serial_data_t *sdata) {
+    return inb(SERIAL_REG_LSR(sdata->port)) & (1U << SERIALREG_LSR_DR__POS);
+}
+
+static uint8_t _serial_read_byte(const serial_data_t *sdata) {
+    while(!_serial_rx_dataready(sdata)) {
+        /* Busy-wait */
+    }
+
+    return inb(SERIAL_REG_DATA(sdata->port));
+}
+
+static inline void _serial_rx_flowcontrol(serial_data_t *sdata) {
+    if(!(sdata->cfg & ((1UL << SERIAL_CFG_FLOWCTRL_RTS__POS) |
+                       (1UL << SERIAL_CFG_FLOWCTRL_DTR__POS)))) {
+        return;
+    }
+
+    uint16_t new_mcr = sdata->mcr_val;
+
+    if(fifo_getfree(&sdata->rxfifo) < ((sdata->rxfifo.size < 8) ? (sdata->rxfifo.size - 1) :
+                                                                  (sdata->rxfifo.size - 3))) {
+        /* De-assert RTS */
+        if((sdata->mcr_val & (1U << SERIALREG_MCR_RTS__POS)) &&
+           (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_RTS__POS))) {
+            new_mcr &= ~(1U << SERIALREG_MCR_RTS__POS);
+        }
+        /* De-assert DTR */
+        if((sdata->mcr_val & (1U << SERIALREG_MCR_DTR__POS)) &&
+           (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_DTR__POS))) {
+            new_mcr &= ~(1U << SERIALREG_MCR_DTR__POS);
+        }
+    } else {
+        /* Assert RTS */
+        if(!(sdata->mcr_val & (1U << SERIALREG_MCR_RTS__POS)) &&
+           (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_RTS__POS))) {
+            new_mcr |= (1U << SERIALREG_MCR_RTS__POS);
+        }
+        /* Assert DTR */
+        if(!(sdata->mcr_val & (1U << SERIALREG_MCR_DTR__POS)) &&
+           (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_DTR__POS))) {
+            new_mcr |= (1U << SERIALREG_MCR_DTR__POS);
+        }
+    }
+
+    if(new_mcr != sdata->mcr_val) {
+        outb(SERIAL_REG_MCR(sdata->port), sdata->mcr_val);
+    }
+}
+
 static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t timeout) {
     serial_data_t *sdata = in->data;
     uint8_t       *bdata = data;
@@ -255,6 +301,7 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
             }
             if(rd_sz) {
                 fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                _serial_rx_flowcontrol(sdata);
                 i += rd_sz;
             }
         } else {
@@ -266,6 +313,7 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
                     rd_sz = sz - i;
                 }
                 fifo_read(&sdata->rxfifo, &bdata[i], rd_sz);
+                _serial_rx_flowcontrol(sdata);
             } else if(_serial_rx_dataready(sdata)) {
                 bdata[i++] = _serial_read_byte(sdata);
             }
@@ -306,6 +354,8 @@ static void _serial_int_handler(uint8_t int_n, uint32_t errno, void *data) {
                 uint8_t data = inb(SERIAL_REG_DATA(sdata->port));
                 /* Ignore failed write - nothing to do */
                 fifo_write(&sdata->rxfifo, &data, 1);
+
+                _serial_rx_flowcontrol(sdata);
             } else {
                 /* Need to read RBR to clear interrupt */
                 inb(SERIAL_REG_DATA(sdata->port));

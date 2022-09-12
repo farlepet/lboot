@@ -68,7 +68,7 @@ int fifo_read(fifo_t *fifo, void *buf, size_t sz) {
     return 0;
 }
 
-size_t fifo_getfree(fifo_t *fifo) {
+size_t fifo_getfree(const fifo_t *fifo) {
     if(fifo->head <= fifo->tail) {
         return (fifo->size - (fifo->tail - fifo->head)) - 1;
     } else {
@@ -76,7 +76,7 @@ size_t fifo_getfree(fifo_t *fifo) {
     }
 }
 
-size_t fifo_getused(fifo_t *fifo) {
+size_t fifo_getused(const fifo_t *fifo) {
     if(fifo->head <= fifo->tail) {
         return fifo->tail - fifo->head;
     } else {
