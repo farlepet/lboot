@@ -13,11 +13,15 @@
  */
 
 /** Print file and line number in panic(). */
-#define FEATURE_VERBOSE_PANIC (1)
+#define FEATURE_VERBOSE_PANIC   (1)
 /** Enable status=bar showing current operations. Only available via VGA. */
-#define FEATURE_STATUSBAR     (1)
+#define FEATURE_STATUSBAR       (1)
 /** Show working status when nothing else is being displayed. */
-#define FEATURE_WORKINGSTATUS (1)
+#define FEATURE_WORKINGSTATUS   (1)
+/** Enable serial file transfer protocol system */
+#define FEATURE_PROTOCOL        (1)
+/** Enable XMODEM protocol */
+#define FEATURE_PROTOCOL_XMODEM (1)
 
 /*
  * DEBUG
@@ -41,7 +45,7 @@
 /*
  * SERIAL
  */
-/** Whether to enable SW FIFO for serial, and what size to use (as 2^n) */
+/** Whether to enable SW FIFO for serial, and what size to use (as 2^n). */
 #define SERIAL_FIFO_SIZE   (     8)
 /** Baud rate to use for serial communication.
  *  @todo Allow dynamic configuration */
@@ -55,6 +59,10 @@
 /* Technically this would be fine if COM1 is used for debug, and COM2 was used
  * for XMODEM, but this isn't terribly likely. */
 #  error "Cannot enable both USE_SERIAL and DEBUG_PROTOCOL_XMODEM"
+#endif
+
+#if (FEATURE_PROTOCOL_XMODEM && !FEATURE_PROTOCOL)
+#  error "FEATURE_PROTOCOL_XMODEM requires FEATURE_PROTOCOL"
 #endif
 
 #endif

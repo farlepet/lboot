@@ -13,6 +13,8 @@ Current Support
    - FAT12
      - Limited to the boot device
      - No long filename support
+ - Serial transfer protocols
+   - XMODEM
  - Kernel Format
    - ELF
  - Multiboot 2 (optional)
@@ -28,9 +30,9 @@ Current Support
    - Serial
 
 Features can be toggled via `inc/config.h`. Stage 2 size based on features:
- - All features disabled:      ~13 KiB
- - With all features:          ~14 KiB
- - With all debugging enabled: ~15 KiB
+ - All features disabled:      ~20 KiB
+ - With all features:          ~23 KiB
+ - With all debugging enabled: ~25 KiB
 
 Future Work
 -----------
@@ -84,4 +86,8 @@ The following are the currently supported set of configuration keys:
  - `CMDLINE`: Commandline to pass to kernel
  - `MODULE`: File to load as a module.
    - Each instance will add a new module, currently up to 4 are supported.
+
+Files can be any of the following:
+ - Plain filename - Attempts to find the file on the boot filesystem
+ - `xmodem://COMx` - Loads file via XMODEM, where x is the serial port to use, 1-4
 

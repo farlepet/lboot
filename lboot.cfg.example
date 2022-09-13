@@ -1,6 +1,5 @@
 CFGVER=1
 
-KERNEL=KERNEL.ELF
-CMDLINE=serial=COM1 cpio=INITRD -init /bin/lshell
-MODULE=INITRD
+KERNEL=xmodem://COM1
+CMDLINE=serial=COM1 -kterm
 

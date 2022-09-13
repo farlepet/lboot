@@ -15,34 +15,35 @@ S2_CFLAGS  = -m32 -march=i386 -fno-pic \
 			 -include "inc/config.h"
 S2_ASFLAGS = $(S2_CFLAGS)
 
-
-S2_SRCS = $(S2_SRCDIR)/startup/startup.s   \
-		  $(S2_SRCDIR)/startup/cstart.c    \
-		  $(S2_SRCDIR)/bios/bios_asm.s     \
-		  $(S2_SRCDIR)/bios/bios.c         \
-		  $(S2_SRCDIR)/config/config.c     \
-		  $(S2_SRCDIR)/data/fifo.c         \
-		  $(S2_SRCDIR)/exec/exec.c         \
-		  $(S2_SRCDIR)/exec/multiboot.c    \
-		  $(S2_SRCDIR)/exec/fmt/elf.c      \
-		  $(S2_SRCDIR)/exec/fmt/flat.c     \
-		  $(S2_SRCDIR)/intr/idt.c          \
-		  $(S2_SRCDIR)/intr/interrupts.c   \
-		  $(S2_SRCDIR)/intr/int_wrappers.s \
-		  $(S2_SRCDIR)/intr/pic.c          \
-		  $(S2_SRCDIR)/io/output.c         \
-		  $(S2_SRCDIR)/io/serial.c         \
-		  $(S2_SRCDIR)/io/vga.c            \
-		  $(S2_SRCDIR)/mm/alloc.c          \
-		  $(S2_SRCDIR)/stdlib/ctype.c      \
-		  $(S2_SRCDIR)/stdlib/string.c     \
-		  $(S2_SRCDIR)/stdlib/stdlib.c     \
-		  $(S2_SRCDIR)/storage/bios.c      \
-		  $(S2_SRCDIR)/storage/file.c      \
-		  $(S2_SRCDIR)/storage/fs/fs.c     \
-		  $(S2_SRCDIR)/storage/fs/fat.c    \
+# TODO: Allow file selection based on features, possible via cmake
+S2_SRCS = $(S2_SRCDIR)/startup/startup.s           \
+		  $(S2_SRCDIR)/startup/cstart.c            \
+		  $(S2_SRCDIR)/bios/bios_asm.s             \
+		  $(S2_SRCDIR)/bios/bios.c                 \
+		  $(S2_SRCDIR)/config/config.c             \
+		  $(S2_SRCDIR)/data/fifo.c                 \
+		  $(S2_SRCDIR)/exec/exec.c                 \
+		  $(S2_SRCDIR)/exec/multiboot.c            \
+		  $(S2_SRCDIR)/exec/fmt/elf.c              \
+		  $(S2_SRCDIR)/exec/fmt/flat.c             \
+		  $(S2_SRCDIR)/intr/idt.c                  \
+		  $(S2_SRCDIR)/intr/interrupts.c           \
+		  $(S2_SRCDIR)/intr/int_wrappers.s         \
+		  $(S2_SRCDIR)/intr/pic.c                  \
+		  $(S2_SRCDIR)/io/output.c                 \
+		  $(S2_SRCDIR)/io/serial.c                 \
+		  $(S2_SRCDIR)/io/vga.c                    \
+		  $(S2_SRCDIR)/mm/alloc.c                  \
+		  $(S2_SRCDIR)/stdlib/ctype.c              \
+		  $(S2_SRCDIR)/stdlib/string.c             \
+		  $(S2_SRCDIR)/stdlib/stdlib.c             \
+		  $(S2_SRCDIR)/storage/bios.c              \
+		  $(S2_SRCDIR)/storage/file.c              \
+		  $(S2_SRCDIR)/storage/fs/fs.c             \
+		  $(S2_SRCDIR)/storage/fs/fat.c            \
 		  $(S2_SRCDIR)/storage/protocol/protocol.c \
-		  $(S2_SRCDIR)/time/pit.c          \
+		  $(S2_SRCDIR)/storage/protocol/xmodem.c   \
+		  $(S2_SRCDIR)/time/pit.c                  \
 		  $(S2_SRCDIR)/time/time.c
 
 S2_OBJS = $(filter %.o,$(patsubst $(S2_SRCDIR)/%.c,$(S2_BUILDDIR)/%.o,$(S2_SRCS)) \
