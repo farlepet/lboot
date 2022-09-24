@@ -69,11 +69,49 @@ int protocol_xmodem_init(protocol_hand_t *proto, const char *uri) {
     return 0;
 }
 
-#define XMODEM_RET_OK    ( 0)
-#define XMODEM_RET_ERROR (-1)
-#define XMODEM_RET_FATAL (-2)
-#define XMODEM_RET_EOT   ( 1)
+#define XMODEM_RET_OK      ( 0)
+#define XMODEM_RET_ERROR   (-1)
+#define XMODEM_RET_FATAL   (-2)
+#define XMODEM_RET_TIMEOUT (-3)
+#define XMODEM_RET_EOT     ( 1)
 
+/**
+ * @brief Calculate CRC-16-CCITT of input data
+ *
+ * @todo Move somewhere else, this will also be used for Kermit
+ *
+ * @param data Data to calculate CRC over
+ * @param len Number of bytes to run
+ * @return Result of CRC
+ */
+static uint16_t _xmodem_crc16(const void *data, size_t len) {
+#define XMODEM_CRC16_INIT (0x0000U)
+#define XMODEM_CRC16_POLY (0x1021U)
+    uint16_t       crc   = XMODEM_CRC16_INIT;
+    const uint8_t *bdata = data;
+
+    for(size_t i = 0; i < len; i++) {
+        crc = crc ^ (bdata[i] << 8);
+
+        for(unsigned i = 0; i < 8; i++) {
+            if(crc & 0x8000) {
+                crc = crc << 1;
+            } else {
+                crc = (crc << 1) ^ XMODEM_CRC16_POLY;
+            }
+        }
+    }
+
+    return crc;
+}
+
+/**
+ * @brief Check checksum of received XMODEM data
+ *
+ * @param proto Protocol handle
+ * @param params XMODEM parameters/state
+ * @param data Buffer containing data to check
+ */
 static int _xmodem_checksum(protocol_hand_t *proto, xmodem_params_t *params, void *data) {
     uint8_t *bdata = data;
 
@@ -97,7 +135,10 @@ static int _xmodem_checksum(protocol_hand_t *proto, xmodem_params_t *params, voi
             if(proto->in.read(&proto->in, &checksum, 2, params->timeout) != 2) {
                 return XMODEM_RET_ERROR;
             }
-            /* @todo Check */
+
+            if(checksum != _xmodem_crc16(data, params->block_sz)) {
+                return -1;
+            }
         } break;
         default:
             DEBUG_PRINT("Bad checksum type: %hhu\n", params->chksum_type);
@@ -117,9 +158,11 @@ static int _xmodem_rx_packet(protocol_hand_t *proto, protocol_filedata_t *fdata,
         DEBUG_PRINT("EOT\n");
         return XMODEM_RET_EOT;
     } else if(ret != sizeof(pkt)) {
-        if(ret != 0) {
-            DEBUG_PRINT("Bad packet size: %d\n", ret);
+        if(ret == 0) {
+            return XMODEM_RET_TIMEOUT;
         }
+
+        DEBUG_PRINT("Bad packet size: %d\n", ret);
         return XMODEM_RET_ERROR;
     }
 
@@ -166,7 +209,7 @@ static int _xmodem_rx_packet(protocol_hand_t *proto, protocol_filedata_t *fdata,
 
     if(_xmodem_checksum(proto, params, fdata->buff + params->curr_off)) {
         DEBUG_PRINT("Checksum failure\n");
-        return -1;
+        return XMODEM_RET_ERROR;
     }
 
 
@@ -235,6 +278,16 @@ static int _xmodem_rx(protocol_hand_t *proto, protocol_filedata_t *fdata, xmodem
             status_working(WORKING_STATUS_ERROR);
             _xmodem_nak(proto, params);
             break;
+        case XMODEM_RET_TIMEOUT:
+            if(params->curr_off) {
+                /* Missed expected packet in the middle of transmission */
+                status_working(WORKING_STATUS_ERROR);
+                _xmodem_nak(proto, params);
+            } else {
+                /* Still waiting on server to send us the first packet */
+                status_working(WORKING_STATUS_WORKING);
+                _xmodem_start(proto, params);
+            }
         }
     }
 
