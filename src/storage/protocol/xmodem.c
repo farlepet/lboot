@@ -202,6 +202,11 @@ static int _xmodem_rx_packet(protocol_hand_t *proto, protocol_filedata_t *fdata,
         params->curr_off -= params->block_sz;
     }
 
+    if((size_t)(params->curr_off + params->block_sz) > fdata->buff_sz) {
+        DEBUG_PRINT("File too large\n");
+        return XMODEM_RET_FATAL;
+    }
+
     if((ret = proto->in.read(&proto->in, fdata->buff + params->curr_off, params->block_sz, params->timeout)) != params->block_sz) {
         DEBUG_PRINT("Failed to read %u bytes, only read %d\n", params->block_sz, ret);
         return XMODEM_RET_ERROR;
