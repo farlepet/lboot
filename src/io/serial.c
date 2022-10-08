@@ -14,7 +14,7 @@ typedef struct {
     uint8_t  mcr_val;  /**< Current value of MCR register, for flow control */
     uint8_t  status;   /**< Serial status flags */
 #define SERIALSTATUS_OVERRUN (1U << 0) /**< HW or FIFO overrun has occured. */
-#define SERIALSTATUS_PARITY  (1U << 1) /**< UART reported a parity error */
+#define SERIALSTATUS_FRAMING (1U << 1) /**< UART reported a framing error */
     size_t   fifo_low; /**< Number of FIFO elements under/over which to utilize flow control */
     fifo_t   rxfifo;   /**< Serial input buffer */
     fifo_t   txfifo;   /**< Serial output buffer */
@@ -350,8 +350,8 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
 
         if((data != NULL) &&
            (sdata->status & (SERIALSTATUS_OVERRUN |
-                             SERIALSTATUS_PARITY))) {
-            /* Return prematurely on overrun or parity error */
+                             SERIALSTATUS_FRAMING))) {
+            /* Return prematurely on error */
             break;
         }
 
@@ -366,9 +366,9 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
         in->status |= INPUTSTATUS_OVERRUN;
         sdata->status &= ~SERIALSTATUS_OVERRUN;
     }
-    if(sdata->status & SERIALSTATUS_PARITY) {
+    if(sdata->status & SERIALSTATUS_FRAMING) {
         in->status |= INPUTSTATUS_DATAERR;
-        sdata->status &= ~SERIALSTATUS_PARITY;
+        sdata->status &= ~SERIALSTATUS_FRAMING;
     }
 
     return i;
@@ -413,8 +413,8 @@ static void _serial_int_handler(uint8_t int_n, uint32_t errno, void *data) {
             if(lsr & (1U << SERIALREG_LSR_OE__POS)) {
                 sdata->status |= SERIALSTATUS_OVERRUN;
             }
-            if(lsr & (1U << SERIALREG_LSR_PE__POS)) {
-                sdata->status |= SERIALSTATUS_PARITY;
+            if(lsr & (1U << SERIALREG_LSR_FE__POS)) {
+                sdata->status |= SERIALSTATUS_FRAMING;
             }
         } break;
         default:

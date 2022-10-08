@@ -48,10 +48,11 @@ void cstart(void) {
 #if (USE_SERIAL)
     /* @todo Allow configuration of serial */
     serial_init(NULL, &_serial, SERIAL_BAUDRATE,
-                ((SERIAL_CFG_PORT_COM1 << SERIAL_CFG_PORT__POS)      |
-                 (SERIAL_FIFO_SIZE     << SERIAL_CFG_INBUFFSZ__POS)  |
-                 (SERIAL_FIFO_SIZE     << SERIAL_CFG_OUTBUFFSZ__POS) |
-                 (1UL                  << SERIAL_CFG_FLOWCTRL_RTS__POS)));
+                ((SERIAL_CFG_PORT_COM1 << SERIAL_CFG_PORT__POS)         |
+                 (SERIAL_FIFO_SIZE     << SERIAL_CFG_INBUFFSZ__POS)     |
+                 (SERIAL_FIFO_SIZE     << SERIAL_CFG_OUTBUFFSZ__POS)    |
+                 (SERIAL_USE_RTS       << SERIAL_CFG_FLOWCTRL_RTS__POS) |
+                 (SERIAL_USE_DTR       << SERIAL_CFG_FLOWCTRL_DTR__POS)));
     output_set(&_serial);
 #endif
 

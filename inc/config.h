@@ -46,10 +46,14 @@
  * SERIAL
  */
 /** Whether to enable SW FIFO for serial, and what size to use (as 2^n). */
-#define SERIAL_FIFO_SIZE   (     8)
+#define SERIAL_FIFO_SIZE   (     6)
 /** Baud rate to use for serial communication.
  *  @todo Allow dynamic configuration */
 #define SERIAL_BAUDRATE    (115200)
+/** Whether to enable RTS/CTS flow control */
+#define SERIAL_USE_RTS     (     1)
+/** Whether to enable DTR/DSS flow control */
+#define SERIAL_USE_DTR     (     0)
 
 
 /*
