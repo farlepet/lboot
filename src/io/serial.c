@@ -173,6 +173,7 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
             /* Even if not requested, once a FIFO always a FIFO */
             int_en |= 1U << SERIALREG_IER_TXEMPTY__POS;
         }
+        int_en |= 1U << SERIALREG_IER_RXLINESTATUS__POS;
     }
 
     if(int_en) {
