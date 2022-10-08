@@ -62,7 +62,7 @@ int protocol_xmodem_init(protocol_hand_t *proto, const char *uri) {
                 ((port             << SERIAL_CFG_PORT__POS)      |
                  (SERIAL_FIFO_SIZE << SERIAL_CFG_INBUFFSZ__POS)  |
                  (SERIAL_FIFO_SIZE << SERIAL_CFG_OUTBUFFSZ__POS) |
-                 (1UL                  << SERIAL_CFG_FLOWCTRL_RTS__POS)));
+                 (1UL              << SERIAL_CFG_FLOWCTRL_RTS__POS)));
 
     proto->recv = _xmodem_recv;
 
@@ -268,6 +268,13 @@ static int _xmodem_rx(protocol_hand_t *proto, protocol_filedata_t *fdata, xmodem
 
         /* Read any garbage still present */
         if(ret) {
+            if(proto->in.status & INPUTSTATUS_OVERRUN) {
+                DEBUG_PRINT("Buffer Overrun\n");
+            }
+            if(proto->in.status & INPUTSTATUS_DATAERR) {
+                DEBUG_PRINT("Data Error\n");
+            }
+
             proto->in.read(&proto->in, NULL, params->block_sz * 4, 25);
         }
 

@@ -9,11 +9,15 @@
 #include "time/time.h"
 
 typedef struct {
-    uint32_t cfg;     /**< Copy of config value passed in init */
-    uint16_t port;    /**< Base IO port of serial port */
-    uint8_t  mcr_val; /**< Current value of MCR register, for flow control */
-    fifo_t   rxfifo;  /**< Serial input buffer */
-    fifo_t   txfifo;  /**< Serial output buffer */
+    uint32_t cfg;      /**< Copy of config value passed in init */
+    uint16_t port;     /**< Base IO port of serial port */
+    uint8_t  mcr_val;  /**< Current value of MCR register, for flow control */
+    uint8_t  status;   /**< Serial status flags */
+#define SERIALSTATUS_OVERRUN (1U << 0) /**< HW or FIFO overrun has occured. */
+#define SERIALSTATUS_PARITY  (1U << 1) /**< UART reported a parity error */
+    size_t   fifo_low; /**< Number of FIFO elements under/over which to utilize flow control */
+    fifo_t   rxfifo;   /**< Serial input buffer */
+    fifo_t   txfifo;   /**< Serial output buffer */
 } serial_data_t;
 
 /*
@@ -136,7 +140,11 @@ int serial_init(input_hand_t *in, output_hand_t *out, uint32_t baud, uint32_t cf
                     in_sz = 4;
                 }
 
-                fifo_init(&sdata->rxfifo, 1UL << in_sz);
+                size_t fifo_sz = 1UL << in_sz;
+
+                fifo_init(&sdata->rxfifo, fifo_sz);
+                /* Set flow control threshold */
+                sdata->fifo_low = fifo_sz - (fifo_sz >> 2);
                 /* Enable RX data available interrupt */
                 int_en |= 1U << SERIALREG_IER_RXAVAIL__POS;
             }
@@ -257,33 +265,33 @@ static inline void _serial_rx_flowcontrol(serial_data_t *sdata) {
 
     uint16_t new_mcr = sdata->mcr_val;
 
-    if(fifo_getused(&sdata->rxfifo) < ((sdata->rxfifo.size < 8) ? (sdata->rxfifo.size - 2) :
-                                                                  (sdata->rxfifo.size - 3))) {
+    if(fifo_getused(&sdata->rxfifo) >= sdata->fifo_low) {
         /* De-assert RTS */
-        if((sdata->mcr_val & (1U << SERIALREG_MCR_RTS__POS)) &&
+        if((new_mcr & (1U << SERIALREG_MCR_RTS__POS)) &&
            (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_RTS__POS))) {
             new_mcr &= ~(1U << SERIALREG_MCR_RTS__POS);
         }
         /* De-assert DTR */
-        if((sdata->mcr_val & (1U << SERIALREG_MCR_DTR__POS)) &&
+        if((new_mcr & (1U << SERIALREG_MCR_DTR__POS)) &&
            (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_DTR__POS))) {
             new_mcr &= ~(1U << SERIALREG_MCR_DTR__POS);
         }
     } else {
         /* Assert RTS */
-        if(!(sdata->mcr_val & (1U << SERIALREG_MCR_RTS__POS)) &&
+        if(!(new_mcr & (1U << SERIALREG_MCR_RTS__POS)) &&
            (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_RTS__POS))) {
             new_mcr |= (1U << SERIALREG_MCR_RTS__POS);
         }
         /* Assert DTR */
-        if(!(sdata->mcr_val & (1U << SERIALREG_MCR_DTR__POS)) &&
+        if(!(new_mcr & (1U << SERIALREG_MCR_DTR__POS)) &&
            (sdata->cfg & (1UL << SERIAL_CFG_FLOWCTRL_DTR__POS))) {
             new_mcr |= (1U << SERIALREG_MCR_DTR__POS);
         }
     }
 
     if(new_mcr != sdata->mcr_val) {
-        outb(SERIAL_REG_MCR(sdata->port), sdata->mcr_val);
+        outb(SERIAL_REG_MCR(sdata->port), new_mcr);
+        sdata->mcr_val = new_mcr;
     }
 }
 
@@ -339,11 +347,27 @@ static ssize_t _serial_read(input_hand_t *in, void *data, size_t sz, uint32_t ti
             }
         }
 
+        if((data != NULL) &&
+           (sdata->status & (SERIALSTATUS_OVERRUN |
+                             SERIALSTATUS_PARITY))) {
+            /* Return prematurely on overrun or parity error */
+            break;
+        }
+
         if(timeout && time_ispast(&timeout_end)) {
             /* @todo Should we also allow for inter-byte timeouts, and the
              * supplied timeout is only for the first byte? */
             break;
         }
+    }
+
+    if(sdata->status & SERIALSTATUS_OVERRUN) {
+        in->status |= INPUTSTATUS_OVERRUN;
+        sdata->status &= ~SERIALSTATUS_OVERRUN;
+    }
+    if(sdata->status & SERIALSTATUS_PARITY) {
+        in->status |= INPUTSTATUS_DATAERR;
+        sdata->status &= ~SERIALSTATUS_PARITY;
     }
 
     return i;
@@ -373,7 +397,9 @@ static void _serial_int_handler(uint8_t int_n, uint32_t errno, void *data) {
             if(fifo_isinitialized(&sdata->rxfifo)) {
                 uint8_t data = inb(SERIAL_REG_DATA(sdata->port));
                 /* Ignore failed write - nothing to do */
-                fifo_write(&sdata->rxfifo, &data, 1);
+                if(fifo_write(&sdata->rxfifo, &data, 1)) {
+                    sdata->status |= SERIALSTATUS_OVERRUN;
+                }
 
                 _serial_rx_flowcontrol(sdata);
             } else {
@@ -381,6 +407,15 @@ static void _serial_int_handler(uint8_t int_n, uint32_t errno, void *data) {
                 inb(SERIAL_REG_DATA(sdata->port));
             }
             break;
+        case SERIALREG_IIR_INTID_RXLINESTATUS: {
+            uint8_t lsr = inb(SERIAL_REG_LSR(sdata->port));
+            if(lsr & (1U << SERIALREG_LSR_OE__POS)) {
+                sdata->status |= SERIALSTATUS_OVERRUN;
+            }
+            if(lsr & (1U << SERIALREG_LSR_PE__POS)) {
+                sdata->status |= SERIALSTATUS_PARITY;
+            }
+        } break;
         default:
             /* Assuming no other interrupts are enabled, and thus don't need to
              * be cleared. */
