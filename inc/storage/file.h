@@ -12,7 +12,7 @@ typedef struct file_hand_struct file_hand_t;
 struct file_hand_struct {
     union {
         fs_hand_t       *fs;    /**< Pointer to handle of owning filesystem */
-#if (FEATURE_PROTOCOL)
+#ifdef CONFIG_PROTOCOL
         protocol_hand_t *proto; /**< Pointer to handle of owning protocol */
 #endif
     };

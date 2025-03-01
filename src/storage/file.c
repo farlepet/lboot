@@ -9,7 +9,7 @@ static fs_hand_t *_default_fs;
 
 int file_open(file_hand_t *file, const char *path) {
     if(0) {
-#if (FEATURE_PROTOCOL)
+#ifdef CONFIG_PROTOCOL
     } else if(strchr(path, ':')) {
         /* Assume URI */
         protocol_hand_t *proto = alloc(sizeof(protocol_hand_t), 0);
@@ -24,7 +24,7 @@ int file_open(file_hand_t *file, const char *path) {
         }
 
         protocol_close(proto);
-#endif /* (FEATURE_PROTOCOL) */
+#endif /* CONFIG_PROTOCOL */
     } else {
         if(_default_fs) {
             if(fs_findfile(_default_fs, NULL, file, path)) {

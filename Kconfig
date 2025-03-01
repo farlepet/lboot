@@ -1,0 +1,126 @@
+mainmenu "LBoot Configuration"
+
+config STATUSBAR
+    bool "Enable statusbar"
+    depends on !USE_SERIAL
+    help
+      Enable status bar at bottom of the screen showing current operation and
+      activity. Only available with the VGA output.
+
+config WORKINGSTATUS
+    bool "Enable activity indicator"
+    help
+      Show activity indicator when nothing else is being displayed. If
+      STATUSBAR is enabled, this will show a spinning icon in the status
+      bar, otherwise it will continuously print periods.
+
+config PROTOCOL
+    bool "Enable serial data transfer protocol support"
+    depends on !USE_SERIAL
+    depends on SERIAL
+
+config PROTOCOL_XMODEM
+    bool "Enable XMODEM serial transfer protocol"
+    depends on PROTOCOL
+
+menu "Executable support"
+
+config EXEC_ELF
+    bool "Enable ELF format support"
+
+config EXEC_FLAT
+    bool "Enable flat binary format support"
+
+config EXEC_FLAT_ADDR
+    hex "Address at which to load flat binary files"
+    depends on EXEC_FLAT
+
+endmenu # Executable support
+
+menu "Debug"
+
+config VERBOSE_PANIC
+    bool "Include filename and line number in output of panic()"
+
+config DEBUG_CONFIG
+    int "Config debug level"
+    range 0 1
+    default 0
+
+config DEBUG_STORAGE_BIOS
+    int "BIOS storage device debug level"
+    range 0 2
+    default 0
+
+config DEBUG_FS_FAT
+    int "FAT filesystem debug level"
+    range 0 2
+    default 0
+
+config DEBUG_EXEC
+    int "Kernel load/execution debug level"
+    range 0 1
+    default 0
+
+config DEBUG_EXEC_ELF
+    int "ELF debug level"
+    range 0 1
+    default 0
+
+config DEBUG_EXEC_MULTIBOOT
+    int "Multiboot debug level"
+    range 0 1
+    default 0
+
+config DEBUG_XMODEM
+    int "XMODEM protocol debug level"
+    range 0 1
+    default 0
+
+endmenu # Debug
+
+menu "Serial"
+
+config SERIAL
+    bool "Enable serial port support"
+
+config USE_SERIAL
+    bool "Use serial port as main output device"
+    depends on SERIAL
+    help
+      Note that if serial is used as the main output device, serial file
+      transfer protocols cannot be enabled.
+
+config SERIAL_FIFO_SIZE
+    int "Software FIFO size"
+    depends on SERIAL
+    range 2 8
+    default 6
+    help
+      Serial FIFO size as a power of two, e.g. a value of 6 would designate a
+      size of 2^6, or 64 bytes.
+
+config SERIAL_BAUDRATE
+    int "Baud rate"
+    depends on SERIAL
+    default 115200
+    help
+      Serial baud rate to use. If actual value cannot be reached by the
+      hardware, it will round up to the next available rate.
+
+choice
+    prompt "Flow control mode"
+    depends on SERIAL
+
+config SERIAL_FLOWCONTROL_RTS
+    bool "Use RTS/CTS flow control"
+
+config SERIAL_FLOWCONTROL_DTR
+    bool "Use DTR/DSS flow control"
+
+config SERIAL_FLOWCONTROL_NONE
+    bool "Do not use flow control"
+
+endchoice # Flow control mode
+
+endmenu # Serial

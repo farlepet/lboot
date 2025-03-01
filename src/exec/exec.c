@@ -22,26 +22,40 @@ int exec_open(exec_hand_t *exec, file_hand_t *file) {
     }
 
     /* Determine file format */
-    if(exec_elf_test(exec, buf)) {
+    if(0) {
+#ifdef CONFIG_EXEC_ELF
+    } else if(exec_elf_test(exec, buf)) {
         exec->fmt = EXEC_FILEFMT_ELF;
+#endif
+#ifdef CONFIG_EXEC_FLAT
     } else {
         printf("exec_open: Format could not be determined, assuming flat binary.\n");
         exec->fmt = EXEC_FILEFMT_FLAT;
     }
+#else
+    } else {
+        printf("exec_open: Unsupported format.\n");
+        return -1;
+    }
+#endif /* CONFIG_EXEC_FLAT */
 
     free(buf);
 
     switch(exec->fmt) {
+#ifdef CONFIG_EXEC_ELF
         case EXEC_FILEFMT_ELF:
             if(exec_elf_init(exec)) {
                 return -1;
             }
             break;
+#endif
+#ifdef CONFIG_EXEC_FLAT
         case EXEC_FILEFMT_FLAT:
             if(exec_flat_init(exec)) {
                 return -1;
             }
             break;
+#endif
         default:
             return -1;
     }
