@@ -1,7 +1,7 @@
 #ifndef LBOOT_STORAGE_PROTOCOL_XMODEM_H
 #define LBOOT_STORAGE_PROTOCOL_XMODEM_H
 
-#if (FEATURE_PROTOCOL_XMODEM)
+#ifdef CONFIG_PROTOCOL_XMODEM
 
 #include "storage/protocol/protocol.h"
 

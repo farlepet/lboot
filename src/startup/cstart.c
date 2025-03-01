@@ -20,7 +20,7 @@ static void _init_data(void) {
 }
 
 static output_hand_t  _vga;
-#if (USE_SERIAL)
+#ifdef CONFIG_USE_SERIAL
 static output_hand_t  _serial;
 #endif
 static storage_hand_t _bootdev;
@@ -45,7 +45,7 @@ void cstart(void) {
      * less than 1 MiB of RAM. */
     alloc_init((uint32_t)&__lboot_end, 0x80000 - (uint32_t)&__lboot_end);
 
-#if (USE_SERIAL)
+#ifdef CONFIG_USE_SERIAL
     /* @todo Allow configuration of serial */
     serial_init(NULL, &_serial, SERIAL_BAUDRATE,
                 ((SERIAL_CFG_PORT_COM1 << SERIAL_CFG_PORT__POS)         |

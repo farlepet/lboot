@@ -1,0 +1,7 @@
+
+obj-$(CONFIG_EXEC_ELF) += $(MDIR)elf.o
+obj-$(CONFIG_EXEC_FLAT) += $(MDIR)flat.o
+
+cflags-$(CONFIG_EXEC_ELF) += -DCONFIG_EXEC_ELF
+cflags-$(CONFIG_EXEC_FLAT) += -DCONFIG_EXEC_FLAT
+

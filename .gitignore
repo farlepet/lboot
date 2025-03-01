@@ -2,6 +2,8 @@
 *.elf
 *.o
 *.img
+.config
+.config.old
 
 .gdb_history
 .vscode/

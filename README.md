@@ -54,6 +54,10 @@ Requirements:
  - `make`
  - `gcc` or `clang`
  - `mtools` for generating floppy image
+ - `menuconfig` or similar, for easy configuration
+   - Not required, `.config` file can be modified by hand
+   - If no `.config` file is present, `.defconfig` is used instead
+   - For a standalone Kconfig-compatible `menuconfig`, see [Kconfiglib](https://github.com/ulfalizer/Kconfiglib)
 
 To build, simply run `make` in the main directory. This will generate a `boot.img`
 file containing the bootloader. A configuration and kernel file will need to be

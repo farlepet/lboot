@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#if (FEATURE_WORKINGSTATUS)
+#ifdef CONFIG_WORKINGSTATUS
 typedef enum working_status_e {
     WORKING_STATUS_NOTWORKING = 0, /**< Not actively working */
     WORKING_STATUS_WORKING,        /**< Actively working */
@@ -29,7 +29,7 @@ struct output_hand_struct {
      */
     ssize_t (*write)(output_hand_t *out, const void *data, size_t sz);
 
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
     /**
      * @brief Update status bar message
      *
@@ -38,7 +38,7 @@ struct output_hand_struct {
      */
     void (*status)(output_hand_t *out, const char *str);
 
-#  if (FEATURE_WORKINGSTATUS)
+#  ifdef CONFIG_WORKINGSTATUS
     /**
      * @brief Update status bar working icon
      *
@@ -87,7 +87,7 @@ int printf(const char *fmt, ...);
  */
 void _panic(const char *fmt, ...);
 
-#if (FEATURE_VERBOSE_PANIC)
+#ifdef CONFIG_VERBOSE_PANIC
 #  define __panic_stringify1(X) #X
 #  define __panic_stringify2(X) __panic_stringify1(X)
 
@@ -114,7 +114,7 @@ void print_hex(const void *data, size_t len);
  */
 void print_status(const char *fmt, ...);
 
-#if (FEATURE_WORKINGSTATUS)
+#ifdef CONFIG_WORKINGSTATUS
 /**
  * @brief Update status showing that work is in progress
  *

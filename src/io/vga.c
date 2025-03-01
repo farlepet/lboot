@@ -18,7 +18,7 @@ static struct {
     .color_fg = 0x07,
     .color_bg = 0x00,
     .res_x    = 80,
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
     .res_y    = 24,
 #else
     .res_y    = 25,
@@ -29,9 +29,9 @@ static struct {
 
 static void    _vga_clear(void);
 static ssize_t _vga_write(output_hand_t *out, const void *data, size_t sz);
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
 static void    _vga_status(output_hand_t *out, const char *str);
-#  if (FEATURE_WORKINGSTATUS)
+#  ifdef CONFIG_WORKINGSTATUS
 static void    _vga_working(output_hand_t *out, working_status_e status);
 #  endif
 #endif
@@ -41,9 +41,9 @@ int vga_init(output_hand_t *out) {
 
     memset(out, 0, sizeof(output_hand_t));
     out->write   = _vga_write;
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
     out->status  = _vga_status;
-#  if (FEATURE_WORKINGSTATUS)
+#  ifdef CONFIG_WORKINGSTATUS
     out->working = _vga_working;
 #  endif
 #endif
@@ -101,7 +101,7 @@ static ssize_t _vga_write(output_hand_t *out, const void *data, size_t sz) {
     return sz;
 }
 
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
 static void _vga_status(output_hand_t *out, const char *str) {
     (void)out;
 
@@ -118,7 +118,7 @@ static void _vga_status(output_hand_t *out, const char *str) {
     }
 }
 
-#  if (FEATURE_WORKINGSTATUS)
+#  ifdef CONFIG_WORKINGSTATUS
 static void _vga_working(output_hand_t *out, working_status_e status) {
     (void)out;
 

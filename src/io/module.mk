@@ -1,0 +1,12 @@
+
+obj-y += $(MDIR)output.o
+obj-y += $(MDIR)vga.o
+# TODO: Support fully disabling serial support
+obj-y += $(MDIR)serial.o
+
+cflags-$(CONFIG_USE_SERIAL) += -DCONFIG_USE_SERIAL
+cflags-$(CONFIG_SERIAL) += -DCONFIG_SERIAL_BAUDRATE=$(CONFIG_SERIAL_BAUDRATE) \
+                           -DCONFIG_SERIAL_FIFO_SIZE=$(CONFIG_SERIAL_FIFO_SIZE)
+cflags-$(CONFIG_FLOWCONTROL_RTS) += -DCONFIG_SERIAL_FLOWCONTROL_RTS
+cflags-$(CONFIG_FLOWCONTROL_DTR) += -DCONFIG_SERIAL_FLOWCONTROL_DTR
+

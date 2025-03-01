@@ -1,7 +1,7 @@
 #ifndef LBOOT_STORAGE_PROTOCOL_PROTOCOL_H
 #define LBOOT_STORAGE_PROTOCOL_PROTOCOL_H
 
-#if (FEATURE_PROTOCOL)
+#ifdef CONFIG_PROTOCOL
 
 typedef struct protocol_hand_struct     protocol_hand_t;
 typedef struct protocol_filedata_struct protocol_filedata_t;

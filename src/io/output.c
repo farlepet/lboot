@@ -444,21 +444,21 @@ void print_status(const char *fmt, ...) {
 
     __builtin_va_end(varg);
 
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
     if(_current_output && _current_output->status) {
         _current_output->status(_current_output, _printf_buff);
     } else {
 #endif
         puts(_printf_buff);
         putchar('\n');
-#if (FEATURE_STATUSBAR)
+#ifdef CONFIG_STATUSBAR
     }
 #endif
 }
 
-#if (FEATURE_WORKINGSTATUS)
+#ifdef CONFIG_WORKINGSTATUS
 void status_working(working_status_e status) {
-#  if (FEATURE_STATUSBAR)
+#  ifdef CONFIG_STATUSBAR
     if(_current_output && _current_output->working) {
         _current_output->working(_current_output, status);
     } else {
@@ -466,7 +466,7 @@ void status_working(working_status_e status) {
         if(status == WORKING_STATUS_WORKING) {
             putchar('.');
         }
-#  if (FEATURE_STATUSBAR)
+#  ifdef CONFIG_STATUSBAR
     }
 #  endif
 }

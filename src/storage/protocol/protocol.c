@@ -1,5 +1,3 @@
-#if (FEATURE_PROTOCOL)
-
 #include <stddef.h>
 #include <string.h>
 
@@ -21,11 +19,11 @@ int protocol_init(protocol_hand_t *proto, const char *uri) {
     memset(proto, 0, sizeof(*proto));
 
     if(0) {
-#if (FEATURE_PROTOCOL_KERMIT)
+#ifdef CONFIG_PROTOCOL_KERMIT
     } else if(_check_scheme(PROTOCOL_URISCHEME_KERMIT, uri, colon)) {
         proto->type = PROTOCOLTYPE_KERMIT;
 #endif
-#if (FEATURE_PROTOCOL_XMODEM)
+#ifdef CONFIG_PROTOCOL_XMODEM
     } else if(_check_scheme(PROTOCOL_URISCHEME_XMODEM, uri, colon)) {
         proto->type = PROTOCOLTYPE_XMODEM;
     } else if(_check_scheme(PROTOCOL_URISCHEME_YMODEM, uri, colon)) {
@@ -34,7 +32,7 @@ int protocol_init(protocol_hand_t *proto, const char *uri) {
     }
 
     switch(proto->type) {
-#if (FEATURE_PROTOCOL_XMODEM)
+#ifdef CONFIG_PROTOCOL_XMODEM
         case PROTOCOLTYPE_XMODEM:
             if(protocol_xmodem_init(proto, uri)) {
                 return -1;
@@ -105,6 +103,4 @@ void protocol_close(protocol_hand_t *proto) {
     /* Currently nothing to do */
     (void)proto;
 }
-
-#endif /* (FEATURE_PROTOCOL) */
 

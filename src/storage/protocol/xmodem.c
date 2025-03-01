@@ -1,5 +1,3 @@
-#if (FEATURE_PROTOCOL_XMODEM)
-
 #include <stddef.h>
 #include <string.h>
 
@@ -58,12 +56,17 @@ int protocol_xmodem_init(protocol_hand_t *proto, const char *uri) {
         return -1;
     }
 
-    serial_init(&proto->in, &proto->out, SERIAL_BAUDRATE, 
-                ((port             << SERIAL_CFG_PORT__POS)         |
-                 (SERIAL_FIFO_SIZE << SERIAL_CFG_INBUFFSZ__POS)     |
-                 (SERIAL_FIFO_SIZE << SERIAL_CFG_OUTBUFFSZ__POS)    |
-                 (SERIAL_USE_RTS   << SERIAL_CFG_FLOWCTRL_RTS__POS) |
-                 (SERIAL_USE_DTR   << SERIAL_CFG_FLOWCTRL_DTR__POS)));
+    serial_init(&proto->in, &proto->out, CONFIG_SERIAL_BAUDRATE,
+                ((port             << SERIAL_CFG_PORT__POS)                |
+                 (CONFIG_SERIAL_FIFO_SIZE << SERIAL_CFG_INBUFFSZ__POS)     |
+                 (CONFIG_SERIAL_FIFO_SIZE << SERIAL_CFG_OUTBUFFSZ__POS)    |
+#ifdef CONFIG_SERIAL_FLOWCONTROL_USE_RTS
+                 (1                       << SERIAL_CFG_FLOWCTRL_RTS__POS) |
+#endif
+#ifdef CONFIG_SERIAL_FLOWCONTROL_DTR
+                 (1                       << SERIAL_CFG_FLOWCTRL_DTR__POS) |
+#endif
+                 0));
 
     proto->recv = _xmodem_recv;
 
@@ -349,6 +352,4 @@ static int _xmodem_recv(protocol_hand_t *proto, file_hand_t *file, const char *u
 
     return 0;
 }
-
-#endif /* (FEATURE_PROTOCOL_XMODEM) */
 
