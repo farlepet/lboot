@@ -12,7 +12,7 @@ $(STAGE1): $(STAGE1).o
 	$(Q) $(LD) $(S1_LDFLAGS) -o $(STAGE1).elf $<
 	$(Q) $(OBJCOPY) -O binary --only-section=.text $(STAGE1).elf $@
 
-$(STAGE1).o: stage1/stage1.s
+$(STAGE1).o: stage1/stage1.S
 	@echo -e "\033[32m    \033[1mAS\033[21m    \033[34m$<\033[0m"
 	$(Q) mkdir -p $(dir $@)
 	$(Q) $(CC) $(S1_ASFLAGS) -c -o $@ $<

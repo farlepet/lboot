@@ -84,8 +84,8 @@ start:
 
 
 
-.include "inc/read_sector.inc"
-.include "inc/read_sector_map.inc"
+#include "inc/read_sector.inc"
+#include "inc/read_sector_map.inc"
 
 
 disk_error:

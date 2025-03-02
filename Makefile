@@ -17,6 +17,15 @@ STAGE2_MAP=build/stage2.map
 OBJCOPY       := objcopy
 SECTOR_MAPPER := tools/sector_mapper/sector_mapper
 
+ifneq ($(CROSS_COMPILE),)
+    CC      := $(CROSS_COMPILE)gcc
+    AS      := $(CROSS_COMPILE)gcc
+    LD      := $(CROSS_COMPILE)ld
+    AR      := $(CROSS_COMPILE)ar
+    STRIP   := $(CROSS_COMPILE)strip
+    OBJCOPY := $(CROSS_COMPILE)objcopy
+endif
+
 include stage1.mk
 include stage2.mk
 
