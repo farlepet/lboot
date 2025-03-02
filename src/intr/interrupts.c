@@ -77,12 +77,35 @@ int interrupt_disable(uint8_t int_id) {
     return 0;
 }
 
-void interrupt_wrapper(uint32_t int_id, uint32_t errcode) {
+static void _handle_exception(uint32_t int_id, uint32_t errcode, x86_pusha_regs_t *pusha, x86_iret_regs_t *iret) {
+#ifdef CONFIG_VERBOSE_EXCEPTIONS
+    printf("PUSHA Registers:\n"
+           "  edi: %08x, esi: %08x\n"
+           "  ebp: %08x, esp: %08x\n"
+           "  ebx: %08x, edx: %08x\n"
+           "  ecx: %08x, eax: %08x\n",
+           pusha->edi, pusha->esi, pusha->ebp, pusha->esp,
+           pusha->ebx, pusha->edx, pusha->ecx, pusha->edx);
+    printf("IRET Registers: \n"
+           "  eip: %08x, cs: %x\n"
+           "  eflags: %08x\n"
+           "  esp: %08x, ds: %x\n",
+           iret->eip, iret->cs, iret->eflags,
+           iret->esp, iret->ds);
+#else
+    (void)pusha;
+    (void)iret;
+#endif
+
+    panic("Unhandled exception: %2u, %08x", int_id, errcode);
+}
+
+void interrupt_wrapper(uint32_t int_id, x86_pusha_regs_t pusha, uint32_t errcode, x86_iret_regs_t iret) {
     if((int_id < INT_ID_MAX) &&
        _isr_handlers[int_id].handler) {
         _isr_handlers[int_id].handler(int_id, errcode, _isr_handlers[int_id].data);
     } else if(int_id < 32) {
-        panic("Unhandled exception: %2u, %08x", int_id, errcode);
+        _handle_exception(int_id, errcode, &pusha, &iret);
     }
 
     /* If interrupt came from the PIC, send EOI. */

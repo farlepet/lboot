@@ -41,6 +41,11 @@ menu "Debug"
 
 config VERBOSE_PANIC
     bool "Include filename and line number in output of panic()"
+    default n
+
+config VERBOSE_EXCEPTIONS
+    bool "Show stacked registers on an unhandled exception"
+    default n
 
 config DEBUG_CONFIG
     int "Config debug level"

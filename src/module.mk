@@ -17,6 +17,7 @@ dirs-y := bios    \
 include $(patsubst %,$(MDIR)%/module.mk,$(dirs-y))
 
 cflags-$(CONFIG_VERBOSE_PANIC) += -DCONFIG_VERBOSE_PANIC
+cflags-$(CONFIG_EXCEPTIONS)    += -DCONFIG_VERBOSE_EXCEPTIONS
 cflags-$(CONFIG_STATUSBAR)     += -DCONFIG_STATUSBAR
 cflags-$(CONFIG_WORKINGSTATUS) += -DCONFIG_WORKINGSTATUS
 

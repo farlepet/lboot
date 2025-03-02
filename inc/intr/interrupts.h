@@ -7,6 +7,24 @@
 #include "bios/bios.h"
 
 /**
+ * Registers pushed on the stack via `pusha`
+ */
+typedef struct x86_pusha_regs_struct {
+    uint32_t edi, esi;
+    uint32_t ebp, esp;
+    uint32_t ebx, edx, ecx, eax;
+} x86_pusha_regs_t;
+
+/**
+ * Registers pushed on the stack on an interrupt
+ */
+typedef struct x86_iret_regs_struct {
+    uint32_t eip, cs;
+    uint32_t eflags;
+    uint32_t esp, ds;
+} x86_iret_regs_t;
+
+/**
  * @brief Interrupt IDs
  */
 typedef enum int_id_enum {
