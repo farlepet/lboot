@@ -17,6 +17,9 @@ STAGE2_MAP=build/stage2.map
 OBJCOPY       := objcopy
 SECTOR_MAPPER := tools/sector_mapper/sector_mapper
 
+HOST_CC := $(CC)
+export HOST_CC
+
 ifneq ($(CROSS_COMPILE),)
     CC      := $(CROSS_COMPILE)gcc
     AS      := $(CROSS_COMPILE)gcc
@@ -73,5 +76,6 @@ emu-sock-dbg: $(FLOPPY)
 
 clean: stage1_clean stage2_clean
 	$(Q) rm -f $(STAGE1) $(FLOPPY)
+	$(Q) cd tools/sector_mapper; $(MAKE) clean
 
 .PHONY: clean emu emu-dbg

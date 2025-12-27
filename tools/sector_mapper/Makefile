@@ -28,12 +28,12 @@ all: $(OUT)
 
 $(OUT): $(OBJS)
 	@echo -e "\033[33m  \033[1mLinking sources\033[0m"
-	@$(CC) -o $(OUT) $(OBJS)
+	$(Q) $(HOST_CC) -o $(OUT) $(OBJS)
 
 $(BUILDDIR)/%.o: $(SRC)/%.c
 	@echo -e "\033[32m  \033[1mCC\033[21m    \033[34m$<\033[0m"
 	$(Q) mkdir -p $(dir $@)
-	$(Q) $(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
+	$(Q) $(HOST_CC) $(CFLAGS) -MMD -MP -c -o $@ $<
 
 
 clean:
