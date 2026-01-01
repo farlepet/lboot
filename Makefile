@@ -17,7 +17,7 @@ STAGE2_MAP=build/stage2.map
 OBJCOPY       := objcopy
 SECTOR_MAPPER := tools/sector_mapper/sector_mapper
 
-HOST_CC := $(CC)
+HOST_CC ?= $(CC)
 export HOST_CC
 
 ifneq ($(CROSS_COMPILE),)
